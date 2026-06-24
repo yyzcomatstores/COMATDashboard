@@ -62,7 +62,7 @@ def fetch_flights():
     # Porter's endpoint returns XML — parse it
     # NOTE: inspect the raw XML once and adjust tag names below if needed.
     # To print raw XML for inspection, uncomment the next line:
-    # print(resp.text[:2000])
+    print(resp.text[:2000])
 
     root = ET.fromstring(resp.content)
     now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
