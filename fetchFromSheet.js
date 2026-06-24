@@ -4,7 +4,7 @@
 // Column order here must match HEADERS in scripts/sync_flights.py
 // ════════════════════════════════════════════════════════
 
-const SHEET_ID      = "YOUR_GOOGLE_SHEET_ID_HERE";   // paste your Sheet ID
+const SHEET_ID      = "1rJDB_S7xw4Mg-3Z1lYkiV9-oJzUqRmC_kAq_AldWP4c";   // paste your Sheet ID
 const SHEET_TAB      = "Flights";
 const REFRESH_MS      = 60_000;                        // poll every 60 seconds
 const SHEET_CSV_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_TAB)}`;
