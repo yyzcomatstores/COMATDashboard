@@ -59,31 +59,33 @@ def fetch_flights():
     resp = requests.get(PORTER_URL, timeout=15)
     resp.raise_for_status()
 
-    # Porter's endpoint returns XML — parse it
-    # NOTE: inspect the raw XML once and adjust tag names below if needed.
-    # To print raw XML for inspection, uncomment the next line:
-    print(resp.text[:2000])
-
     root = ET.fromstring(resp.content)
+
+    # DEBUG: print one complete <item> element so we can see every field name
+    # with nothing truncated. Remove this block once the mapping below is confirmed.
+    first_item = root.find(".//item")
+    if first_item is not None:
+        print("──── SAMPLE ITEM (full) ────")
+        print(ET.tostring(first_item, encoding="unicode"))
+        print("─────────────────────────────")
+
     now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     rows = []
 
-    # The XML structure from radar.flyporter.com typically wraps each flight
-    # in a <flight> (or similar) element. Walk every element and pull fields.
-    # Adjust the tag names (e.g. "FlightNumber", "Origin") to match the real XML.
-    for flight in root.iter("flight"):           # change "flight" if the tag differs
+    # Porter's feed is RSS-style: each flight is an <item> directly under <channel>.
+    for flight in root.iter("item"):
         def get(tag, default="-"):
             el = flight.find(tag)
             return el.text.strip() if el is not None and el.text else default
 
-        flight_num = get("FlightNumber") or get("flightNumber") or get("flight_number")
-        origin     = get("Origin")       or get("origin")       or get("departureAirport")
-        dest       = get("Destination")  or get("destination")  or get("arrivalAirport")
-        aircraft   = get("Aircraft")     or get("aircraftType") or get("equipment")
-        std        = get("STD")          or get("scheduledDeparture") or get("std")
-        status     = get("Status")       or get("flightStatus") or get("status")
-        gate       = get("Gate")         or get("departureGate") or get("gate")
-        tail       = get("TailNumber")   or get("registration")  or get("tail")
+        flight_num = get("flightNumber")
+        origin     = get("departureAirportCode")
+        dest       = get("destinationAirportCode")
+        aircraft   = get("aircraftType")       # ← unconfirmed, may not be the real tag name
+        std        = get("estimatedDepartureTime") if get("estimatedDepartureTime") != "-" else get("scheduledDepartureTime")
+        status     = get("flightStatus")       # ← unconfirmed, may not be the real tag name
+        gate       = get("departureGate")      # ← unconfirmed, may not be the real tag name
+        tail       = get("tailNumber")
 
         direction  = "OUTBOUND" if origin == "YYZ" else "INBOUND"
 
