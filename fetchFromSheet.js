@@ -81,6 +81,7 @@ async function fetchLiveFlights() {
       status:    r[COL.status]    || "Scheduled",
       gate:      r[COL.gate]      || "-",
       tail:      r[COL.tail]      || "-",
+      aircraft:  r[COL.tail]      || "-",   // your table's "Aircraft" column renders f.aircraft — feed has no aircraft type, so show tail number here instead
       codeshare: r[COL.codeshare] || "-",
     }));
 
@@ -105,4 +106,5 @@ async function fetchLiveFlights() {
   }
 }
 
-setInterval(fetchLiveFlights, REFRESH_MS);
+fetchLiveFlights();                          // run once immediately on load
+setInterval(fetchLiveFlights, REFRESH_MS);   // then keep refreshing every 60s
