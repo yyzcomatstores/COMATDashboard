@@ -1,0 +1,1952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Porter Airlines — YYZ COMAT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+
+<!-- Firebase v9 -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+  import { getDatabase, ref, set, onValue, get } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
+  import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDm4-v-SvgF39rKS4x-ueJw5mF5aW-c73c",
+    authDomain: "portercomatmanagement.firebaseapp.com",
+    databaseURL: "https://portercomatmanagement-default-rtdb.firebaseio.com",
+    projectId: "portercomatmanagement",
+    storageBucket: "portercomatmanagement.firebasestorage.app",
+    messagingSenderId: "507346715034",
+    appId: "1:507346715034:web:dfc72898e51053ee7c7a23",
+    measurementId: "G-001ETJXT8H"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const auth = getAuth(app);
+
+  window.firebaseApp = app;
+  window.firebaseDb = db;
+  window.firebaseAuth = auth;
+  window.firebaseRef = ref;
+  window.firebaseSet = set;
+  window.firebaseOnValue = onValue;
+  window.firebaseGet = get;
+  window.firebaseSignInAnonymously = signInAnonymously;
+  window.firebaseOnAuthStateChanged = onAuthStateChanged;
+  window.firebaseSignOut = signOut;
+</script>
+<style>
+  :root {
+    --porter-navy: #1a1f2e;
+    --porter-deep: #141924;
+    --porter-teal: #00c2a8;
+    --porter-textcolor1: #444edd;
+    --porter-teal-dim: rgba(0,194,168,0.15);
+    --porter-teal-border: rgba(0,194,168,0.35);
+    --porter-gold: #f0b429;
+    --porter-red: #e8413e;
+    --porter-green: #2ecc8a;
+    --forest-green: #2f7d40;
+    --forest-green-light: #a8d5a2;
+    --forest-green-dim: rgba(46,125,64,0.16);
+    --forest-green-border: rgba(46,125,64,0.3);
+    --surface: #1e2436;
+    --surface2: #252c3d;
+    --surface3: #2d3550;
+    --border: rgba(255,255,255,0.07);
+    --border-active: rgba(0,194,168,0.5);
+    --text-primary: #eef0f5;
+    --text-secondary: #8b93a8;
+    --text-muted: #555e72;
+    --font-ui: 'Sora', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  body.keith-theme {
+    --porter-navy: #163a28;
+    --porter-deep: #0f2416;
+    --porter-teal: #70b87f;
+    --porter-textcolor1: #a5c69b;
+    --porter-teal-dim: rgba(112,184,127,0.15);
+    --porter-teal-border: rgba(112,184,127,0.35);
+    --porter-gold: #d4b76e;
+    --porter-red: #b35a42;
+    --porter-green: #8cc38c;
+    --text-primary: #e8f3de;
+    --text-secondary: #b7cfac;
+    --text-muted: #9bb199;
+    --surface: #18311f;
+    --surface2: #203d2b;
+    --surface3: #284631;
+    --border: rgba(165,214,178,0.15);
+    --border-active: rgba(112,184,127,0.5);
+  }
+
+  body.jamail-theme{
+    --porter-navy: #131313;
+    --porter-deep: #000000;
+    --porter-teal: #ffffff;
+    --porter-textcolor1: #ffffff;
+    --porter-teal-dim: rgba(165, 165, 165, 0.15);
+    --porter-teal-border: rgba(165, 165, 165, 0.35);
+    --porter-gold: #d4b76e;
+    --porter-red: #ac4141;
+    --porter-green: #317737;
+    --text-primary: #f5f5f5;
+    --text-secondary: #ebebeb;
+    --text-muted: #afafaf;
+    --surface: #313131;
+    --surface2: #3b3b3b;
+    --surface3: #333333;
+    --border: rgba(167, 167, 167, 0.15);
+    --border-active: rgba(167, 167, 167, 0.5);
+  }
+
+  /* ── JAMAIL VIDEO BACKGROUND ── */
+  #jamail-videobg {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  body.jamail-theme #jamail-videobg {
+    display: block;
+  }
+
+  #jamail-videobg video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.75;
+    filter: brightness(0.7) saturate(1.2);
+  }
+
+  /* Ensure all content sits above the video */
+  #login-screen,
+  #app {
+    position: relative;
+    z-index: 1;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-ui);
+    background: var(--porter-deep);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* LOGIN SCREEN */
+  #login-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--porter-deep);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.4s ease;
+  }
+
+  #login-screen.hidden { display: none; }
+
+  .login-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 40%, rgba(0,194,168,0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 60% at 80% 70%, rgba(68,78,221,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 2.5rem 2.8rem;
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+    animation: slideUp 0.4s ease;
+  }
+
+  .login-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 2rem;
+  }
+
+  .login-logo-mark {
+    width: 42px;
+    height: 42px;
+    background: var(--porter-teal);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--porter-navy);
+  }
+
+  .login-logo-text { font-size: 16px; font-weight: 600; }
+  .login-logo-sub { font-size: 12px; color: var(--text-secondary); font-weight: 300; }
+
+  .login-title {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .login-subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    font-weight: 300;
+  }
+
+  .login-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 1rem;
+  }
+
+  .login-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+
+  .login-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  .login-input:focus { border-color: var(--porter-teal); }
+  .login-input::placeholder { color: var(--text-muted); }
+
+  .login-btn {
+    width: 100%;
+    background: var(--porter-teal);
+    color: var(--porter-navy);
+    border: none;
+    border-radius: 9px;
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 13px;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    transition: filter 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .login-btn:hover { filter: brightness(1.1); }
+  .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .login-error {
+    background: rgba(232,65,62,0.1);
+    border: 1px solid rgba(232,65,62,0.3);
+    border-radius: 8px;
+    color: var(--porter-red);
+    font-size: 13px;
+    padding: 10px 12px;
+    margin-bottom: 1rem;
+    display: none;
+  }
+
+  .login-error.show { display: block; }
+
+  .login-footer {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--porter-navy);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo-block { display: flex; align-items: center; gap: 12px; }
+
+  .logo-text { font-size: 14px; font-weight: 500; letter-spacing: 0.3px; }
+  .logo-text span { color: var(--text-secondary); font-weight: 300; margin-left: 6px; }
+
+  .header-right { display: flex; align-items: center; gap: 14px; }
+
+  .station-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--porter-teal-dim);
+    border: 1px solid var(--porter-teal-border);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--porter-teal);
+  }
+
+  .station-badge .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--porter-green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .header-time { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+
+  /* Refresh countdown badge */
+  .refresh-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .refresh-badge:hover { border-color: var(--porter-teal-border); color: var(--porter-teal); }
+  .refresh-badge .refresh-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--porter-green); }
+
+  /* User badge */
+  .user-badge {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    transition: all 0.15s;
+  }
+
+  .user-badge:hover { border-color: var(--porter-red); color: var(--porter-red); }
+  .user-badge.keith { border-color: var(--forest-green-border); background: var(--forest-green-dim); color: var(--forest-green-light); }
+  .user-badge.keith:hover { border-color: var(--forest-green); color: var(--forest-green); }
+  .user-avatar.jamail { border-color: var(--porter-gold); background: var(--porter-gold); color: var(--porter-navy); }
+  .user-avatar.jamail:hover { border-color: var(--porter-gold); color: var(--porter-navy); } 
+  .user-avatar {
+    width: 22px; height: 22px;
+    background: var(--porter-teal-dim);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--porter-teal); font-weight: 600;
+  }
+  .user-avatar.keith { background: var(--forest-green); color: #f0fcf0; }
+  .user-avatar.jamail { background: var(--porter-gold); color: #f0fcf0; }
+
+  /* ── NAV TABS ── */
+  .nav-tabs {
+    background: var(--porter-navy);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    gap: 0;
+  }
+
+  .tab-btn {
+    background: none; border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    font-family: var(--font-ui); font-size: 13px; font-weight: 400;
+    padding: 14px 20px; cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 8px;
+    white-space: nowrap;
+  }
+
+  .tab-btn:hover { color: var(--text-primary); }
+  .tab-btn.active { color: var(--porter-teal); border-bottom-color: var(--porter-teal); font-weight: 500; }
+  .tab-icon { width: 16px; height: 16px; opacity: 1; }
+  .tab-count {
+    background: var(--porter-teal-dim); color: var(--porter-teal);
+    border-radius: 10px; font-size: 11px; font-family: var(--font-mono);
+    padding: 1px 6px; min-width: 20px; text-align: center;
+  }
+
+  /* ── MAIN ── */
+  main { padding: 2rem; max-width: 2500px; margin: 0 auto; }
+  .page { display: none; animation: fadeIn 0.4s ease; }
+  .page.active { display: block; }
+
+  @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem; flex-wrap: wrap; gap: 1px;
+  }
+
+  .page-title { font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 0; }
+  .page-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 3px; font-weight: 300; }
+
+  /* ── STAT ROW ── */
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 12px; margin-bottom: 1.5rem;
+  }
+
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px;
+  }
+
+  .stat-label { font-size: 15px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+  .stat-value { font-family: var(--font-mono); font-size: 50px; font-weight: 500; color: var(--text-primary); }
+  .stat-value.teal { color: var(--porter-teal); }
+  .stat-value.gold { color: var(--porter-gold); }
+  .stat-value.red { color: var(--porter-red); }
+  .stat-value.green { color: var(--porter-green); }
+
+  /* ── TABLE ── */
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+
+  .table-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+    flex-wrap: wrap; gap: 10px;
+  }
+
+  .toolbar-title { font-size: 20px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0; }
+
+  .toolbar-actions { display: flex; gap: 8px; align-items: center; }
+
+  input[type="text"], input[type="date"], input[type="number"], input[type="password"], select, textarea {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 7px; color: var(--text-primary);
+    font-family: var(--font-ui); font-size: 13px; padding: 8px 12px;
+    outline: none; transition: border-color 0.2s;
+  }
+
+  input[type="text"]:focus, input[type="date"]:focus,
+  input[type="number"]:focus, input[type="password"]:focus, select:focus, textarea:focus {
+    border-color: var(--porter-teal);
+  }
+
+  input::placeholder { color: var(--text-muted); }
+  select option { background: var(--surface2); }
+  .search-input { width: 300px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { background: var(--surface2); border-bottom: 1px solid var(--border); }
+
+  th {
+    padding: 11px 16px; text-align: left;
+    font-size: 20px; font-weight: 500; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0; white-space: nowrap;
+  }
+
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; cursor: pointer; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+
+  td { padding: 12px 16px; color: var(--text-primary); font-size: 20px; }
+  td.mono { font-family: var(--font-mono); font-size: 20px; }
+  td.muted { color: var(--text-secondary); }
+
+  .empty-state { text-align: center; padding: 3rem; color: var(--text-muted); }
+  .empty-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.4; }
+  .empty-label { font-size: 14px; }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 5px;
+    font-size: 20px; font-weight: 500; font-family: var(--font-mono); white-space: nowrap;
+  }
+
+  .badge-outbound  { background: rgba(240,180,41,0.15); color: var(--porter-gold); }
+  .badge-inbound   { background: rgba(0,194,168,0.15);  color: var(--porter-teal); }
+  .badge-completed { background: rgba(46,204,138,0.15); color: var(--porter-green); }
+  .badge-departed  { background: rgba(232,65,62,0.15);  color: var(--porter-red); }
+  .badge-scheduled { background: rgba(139,147,168,0.12); color: var(--text-secondary); }
+  .badge-loading  { background: rgba(240,180,41,0.15); color: var(--porter-gold); }
+  .badge-unloading { background: rgba(0,194,168,0.15); color: var(--porter-teal); border: 1px solid rgba(0,194,168,0.35); }
+  .badge-delayed   { background: rgba(232,65,62,0.2);   color: var(--porter-red); border: 1px solid rgba(232,65,62,0.4); }
+  .badge-live      { background: rgba(46,204,138,0.12); color: var(--porter-green); font-size: 11px; }
+
+  /* ── TV CYCLE INDICATOR ── */
+  .tv-cycle-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--porter-teal-dim);
+    z-index: 500;
+    display: none;
+  }
+  .tv-cycle-bar.visible { display: block; }
+  .tv-cycle-progress {
+    height: 100%;
+    background: var(--porter-teal);
+    width: 0%;
+    transition: width linear;
+  }
+  .tv-cycle-label {
+    position: fixed;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    background: var(--surface);
+    padding: 2px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    z-index: 500;
+    display: none;
+    white-space: nowrap;
+  }
+  .tv-cycle-label.visible { display: block; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    border-radius: 7px; font-family: var(--font-ui); font-size: 13px; font-weight: 500;
+    padding: 8px 16px; cursor: pointer; border: none;
+    transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+
+  .btn-primary { background: var(--porter-green); color: var(--porter-navy); }
+  .btn-primary:hover { filter: brightness(1.1); }
+
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
+  .btn-ghost:hover { border-color: var(--porter-red); color: var(--porter-deep); background: var(--porter-red); }
+
+  .btn-danger { background: rgba(232,65,62,0.15); color: var(--porter-red); border: 1px solid rgba(232,65,62,0.3); }
+  .btn-danger:hover { background: rgba(232,65,62,0.25); }
+
+  .btn-success { background: rgba(46,204,138,0.15); color: var(--porter-green); border: 1px solid rgba(46,204,138,0.3); }
+  .btn-success:hover { background: rgba(46,204,138,0.25); }
+
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-icon { padding: 7px 8px; }
+
+  /* ── FORM ── */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+
+  .form-label { font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; }
+  .form-group input, .form-group select, .form-group textarea { width: 100%; }
+  textarea { resize: vertical; min-height: 80px; }
+
+  .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  .form-section-title { font-size: 13px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 1rem; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+
+  /* ── MODAL ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; padding: 1rem; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; animation: slideUp 0.2s ease; }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--border); }
+  .modal-title { font-size: 15px; font-weight: 600; }
+  .modal-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px; line-height: 1; padding: 2px 6px; border-radius: 4px; }
+  .modal-close:hover { color: var(--text-primary); background: var(--surface2); }
+  .modal-body { padding: 20px; }
+  .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+
+  /* ── DETAIL GRID ── */
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .detail-item-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+  .detail-item-value { font-size: 13px; color: var(--text-primary); font-family: var(--font-mono); }
+
+  /* ── CONFIRM ── */
+  .confirm-checks { margin: 12px 0; display: flex; flex-direction: column; gap: 8px; }
+  .check-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--surface2); border-radius: 8px; border: 1px solid var(--border); cursor: pointer; transition: border-color 0.2s; }
+  .check-item:hover { border-color: var(--porter-teal-border); }
+  .check-item.checked { border-color: var(--porter-teal-border); background: var(--porter-teal-dim); }
+  .check-item input[type="checkbox"] { accent-color: var(--porter-teal); width: 16px; height: 16px; }
+  .check-item-label { font-size: 13px; }
+
+  /* ── SUB TABS ── */
+  .sub-tabs { display: flex; gap: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 4px; width: fit-content; margin-bottom: 1.5rem; }
+  .sub-tab { background: none; border: none; color: var(--text-secondary); font-family: var(--font-ui); font-size: 13px; font-weight: 500; padding: 7px 18px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+  .sub-tab.active { background: var(--porter-teal); color: var(--porter-navy); }
+
+  /* ── TOAST ── */
+  .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
+  .toast { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 12px 16px; font-size: 13px; display: flex; align-items: center; gap: 10px; animation: slideInRight 0.3s ease; max-width: 320px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+
+  @keyframes slideInRight { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+
+  .toast-success { border-color: rgba(46,204,138,0.4); }
+  .toast-success .toast-icon { color: var(--porter-green); }
+  .toast-danger  { border-color: rgba(232,65,62,0.4); }
+  .toast-danger  .toast-icon { color: var(--porter-red); }
+  .toast-info    { border-color: rgba(0,194,168,0.4); }
+  .toast-info    .toast-icon { color: var(--porter-teal); }
+
+  /* ── MISC ── */
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .filter-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .completed-row td { opacity: 0.7; }
+
+  .delay-text { color: var(--porter-red); font-family: var(--font-mono); font-size: 12px; }
+  .live-indicator { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--porter-green); font-family: var(--font-mono); }
+  .live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--porter-green); animation: pulse 1.5s infinite; }
+
+  /* SYNC STATUS BANNER */
+  .sync-banner {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    right: 0;
+    background: var(--porter-navy);
+    border-bottom: 1px solid var(--border);
+    padding: 6px 2rem;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    z-index: 99;
+    display: none;
+  }
+  .sync-banner.show { display: block; }
+  .sync-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+  }
+  .sync-status.loading { color: var(--text-secondary); }
+  .sync-status.connected { color: var(--porter-green); }
+  .sync-status.error { color: var(--porter-red); }
+  .sync-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-secondary);
+  }
+  .sync-status.loading .sync-dot { background: var(--text-secondary); }
+  .sync-status.connected .sync-dot { background: var(--porter-green); }
+  .sync-status.error .sync-dot { background: var(--porter-red); }
+</style>
+</head>
+<body>
+<div class="tv-cycle-bar" id="tv-cycle-bar">
+  <div class="tv-cycle-progress" id="tv-cycle-progress"></div>
+</div>
+<div class="tv-cycle-label" id="tv-cycle-label"></div>
+
+<!-- JAMAIL VIDEO BACKGROUND — add your video at /assets/jamail-bg.mp4 in your repo -->
+<div id="jamail-videobg" aria-hidden="true">
+  <video autoplay muted loop playsinline src="/assets/jamail-bg.mp4"></video>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     LOGIN SCREEN
+══════════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-bg"></div>
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-mark">PD</div>
+      <div>
+        <div class="login-logo-text">Porter Airlines Canada Limited</div>
+        <div class="login-logo-sub">Technical Operations · Stores</div>
+      </div>
+    </div>
+
+    <div class="login-title">Sign In</div>
+    <div class="login-subtitle">YYZ Station — COMAT Management System</div>
+
+    <div class="login-error" id="login-error">Incorrect username or password.</div>
+
+    <div class="login-field">
+      <label class="login-label">Username</label>
+      <input class="login-input" type="text" id="login-username" placeholder="e.g. Keith Acker" autocomplete="username" onkeydown="loginKeydown(event)">
+    </div>
+    <div class="login-field">
+      <label class="login-label">Password</label>
+      <input class="login-input" type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" onkeydown="loginKeydown(event)">
+    </div>
+
+    <button class="login-btn" onclick="doLogin()">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M6 2H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3" stroke-linecap="round"/>
+        <path d="M10 10l3-2.5L10 5" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="7" y1="7.5" x2="13" y2="7.5" stroke-linecap="round"/>
+      </svg>
+      Sign In
+    </button>
+
+    <div class="login-footer">
+      Porter Airlines Technical Operations &nbsp;|&nbsp;|&nbsp; YYZ Station<br>
+      <span style="color:var(--text-muted); font-size:10px;">Application is not intended to be distributed. Contains legal and/or privileged information.</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     MAIN APP (hidden until login)
+══════════════════════════════════════════════════ -->
+<div id="app" style="display:none">
+
+<header>
+  <div class="logo-block">
+    <div>
+      <div class="logo-text">Porter Airlines Canada Limited<span>TECHNICAL OPERATIONS || STORES</span></div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="station-badge">
+      <span class="dot"></span>
+      YYZ — Toronto Pearson Intl Airport
+    </div>
+    <div class="refresh-badge" onclick="manualRefresh()" title="Click to refresh now">
+      <span class="refresh-dot"></span>
+      <span id="refresh-countdown">5:00</span>
+    </div>
+    <div class="header-time" id="clock">--:-- UTC</div>
+    <div class="user-badge" onclick="doLogout()" title="Click to sign out">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span id="user-display">User</span>
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M2 3l3 3 3-3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </div>
+</header>
+
+<!-- SYNC STATUS BANNER -->
+<div id="sync-banner" class="sync-banner">
+  <div id="sync-status" class="sync-status">
+    <span class="sync-dot"></span>
+    <span id="sync-text">Initializing sync...</span>
+  </div>
+</div>
+
+<nav class="nav-tabs">
+  <button class="tab-btn active" onclick="switchTab('flights', this)">
+    <svg class="tab-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M2 11l3-6 3 2 3-4 3 2" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="1" y1="13" x2="15" y2="13" stroke-linecap="round"/>
+    </svg>
+    Flight Information
+    <span class="tab-count" id="flight-count">0</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab('comat', this)">
+    <svg class="tab-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+      <rect x="2" y="3" width="12" height="10" rx="2"/>
+      <line x1="5" y1="7" x2="11" y2="7" stroke-linecap="round"/>
+      <line x1="5" y1="10" x2="9" y2="10" stroke-linecap="round"/>
+    </svg>
+    COMAT Dashboard
+    <span class="tab-count" id="comat-count">0</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab('manage', this)">
+    <svg class="tab-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+      <circle cx="8" cy="8" r="6"/>
+      <line x1="8" y1="5" x2="8" y2="11" stroke-linecap="round"/>
+      <line x1="5" y1="8" x2="11" y2="8" stroke-linecap="round"/>
+    </svg>
+    Add COMAT
+  </button>
+</nav>
+
+<main>
+
+  <!-- ═══════ PAGE 1: FLIGHT INFORMATION ═══════ -->
+  <div class="page active" id="page-flights">
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">STORES — YYZ</div>
+        <div class="page-subtitle">Porter Airlines departures and arrivals @ Toronto Pearson
+          <span id="live-badge" style="display:none;" class="live-indicator" style="margin-left:8px;">
+            &nbsp;<span class="live-dot"></span> LIVE
+          </span>
+        </div>
+      </div>
+      <div class="filter-row">
+        <input type="text" class="search-input" placeholder="Search flight, dest ..." id="flight-search" oninput="renderFlights()">
+        <select id="flight-status-filter" onchange="renderFlights()">
+          <option value="">ALL</option>
+          <option value="Scheduled">Scheduled</option>
+          <option value="Loading">Loading</option>
+          <option value="Departed">Departed</option>
+          <option value="Delayed">Delayed</option>
+        </select>
+        <select id="flight-sort" onchange="renderFlights()">
+          <option value="time">Sort: By Time</option>
+          <option value="flight_asc">Sort: Flight # ↑</option>
+        </select>
+        <button class="btn btn-ghost" onclick="manualRefresh()">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" id="refresh-icon">
+            <path d="M12 7A5 5 0 1 1 7 2c1.5 0 2.8.6 3.8 1.6L13 1" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Refresh
+        </button>
+      </div>
+    </div>
+
+    <div class="stat-row" id="flight-stats"></div>
+
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <span class="toolbar-title">Scheduled Flights</span>
+        <span class="toolbar-title" style="color:var(--text-muted); font-weight:300; font-size:13px;" id="flight-last-updated"></span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Flight</th>
+            <th>Route</th>
+            <th>Aircraft</th>
+            <th>STD / STA</th>
+            <th>CTDWN</th>
+            <th>Status</th>
+            <th>Gate</th>
+            <th>COMAT</th>
+          </tr>
+        </thead>
+        <tbody id="flights-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════ PAGE 2: COMAT DASHBOARD ═══════ -->
+  <div class="page" id="page-comat">
+    <div class="page-header">
+      <div>
+        <div class="page-title">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--porter-teal)" stroke-width="1.8">
+            <rect x="3" y="4" width="14" height="12" rx="2"/>
+            <line x1="7" y1="9" x2="13" y2="9" stroke-linecap="round"/>
+            <line x1="7" y1="12" x2="11" y2="12" stroke-linecap="round"/>
+          </svg>
+          COMAT Dashboard
+        </div>
+        <div class="page-subtitle">Company material movements — YYZ station</div>
+      </div>
+      <div class="filter-row">
+        <input type="text" class="search-input" placeholder="Search order#, part, flight..." id="comat-search" oninput="renderComat()">
+      </div>
+    </div>
+
+    <div class="stat-row" id="comat-stats"></div>
+
+    <div class="sub-tabs">
+      <button class="sub-tab active" onclick="switchSubTab('all', this)">📋 All</button>
+      <button class="sub-tab" onclick="switchSubTab('outbound', this)">⬆ Outbound</button>
+      <button class="sub-tab" onclick="switchSubTab('inbound', this)">⬇ Inbound</button>
+      <button class="sub-tab" onclick="switchSubTab('completed', this)">✓ Completed</button>
+    </div>
+
+    <div class="table-wrap" id="comat-table-wrap">
+      <div class="table-toolbar">
+        <span class="toolbar-title" id="comat-table-label">Outbound COMAT</span>
+        <span class="toolbar-title" style="color:var(--text-muted); font-weight:300; font-size:13px;" id="comat-record-count"></span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Flight</th>
+            <th>Route</th>
+            <th>Order #</th>
+            <th>Responsible</th>
+            <th>Remarks</th>
+            <th>PCS</th>
+            <th>Time</th>
+            <th>Direction</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="comat-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════ PAGE 3: ADD COMAT ═══════ -->
+  <div class="page" id="page-manage">
+    <div class="page-header">
+      <div>
+        <div class="page-title">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--porter-teal)" stroke-width="1.8">
+            <circle cx="10" cy="10" r="7"/>
+            <line x1="10" y1="7" x2="10" y2="13" stroke-linecap="round"/>
+            <line x1="7" y1="10" x2="13" y2="10" stroke-linecap="round"/>
+          </svg>
+          Add COMAT to Flight
+        </div>
+        <div class="page-subtitle">Attach company material to a Porter flight departing or arriving YYZ</div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-section-title">Flight Selection</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Select Flight</label>
+          <select id="form-flight">
+            <option value="">— Choose a flight —</option>
+          </select>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-section-title">COMAT Details</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Order Number # <span style="color:var(--text-muted)">(optional)</span></label>
+          <input type="text" id="form-orderNumber" placeholder="e.g. ORD-12345678">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Person(s) Responsible <span style="color:var(--porter-red)">*</span></label>
+          <input type="text" id="form-part" placeholder="e.g. John Doe / 00001" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Pieces</label>
+          <input type="number" id="form-qty" placeholder="1" min="1" value="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority <span style="color:var(--porter-red)">*</span></label>
+          <select id="form-desc" required>
+            <option value="">— Select priority —</option>
+            <option value="AOG">AOG</option>
+            <option value="Normal">Normal</option>
+            <option value="Expedite">Expedite</option>
+            <option value="N/A">N/A</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column: 1 / -1;">
+          <label class="form-label">Additional Notes <span style="color:var(--text-muted)">(optional)</span></label>
+          <textarea id="form-notes" placeholder="other remarks, part details..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px; justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="clearForm()">Clear</button>
+      <button class="btn btn-primary" onclick="addComat()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="7" y1="2" x2="7" y2="12" stroke-linecap="round"/>
+          <line x1="2" y1="7" x2="12" y2="7" stroke-linecap="round"/>
+        </svg>
+        Add to COMAT Dashboard
+      </button>
+    </div>
+  </div>
+
+</main>
+
+</div><!-- end #app -->
+
+<!-- COMAT DETAIL MODAL -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="detail-modal-title">COMAT Record</div>
+      <button class="modal-close" onclick="closeModal('detail-modal')">×</button>
+    </div>
+    <div class="modal-body" id="detail-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('detail-modal')">Close</button>
+      <button class="btn btn-danger btn-sm" id="detail-remove-btn">Remove Record</button>
+      <button class="btn btn-success btn-sm" id="detail-confirm-btn">Confirm Receipt →</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM RECEIPT MODAL -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <div class="modal-title">Confirm COMAT Receipt</div>
+      <button class="modal-close" onclick="closeModal('confirm-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">Verify the following contents before marking as received:</p>
+      <div id="confirm-checks" class="confirm-checks"></div>
+      <p style="font-size:12px; color:var(--text-muted); margin-top:12px;">All items must be checked to confirm receipt.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('confirm-modal')">Cancel</button>
+      <button class="btn btn-success" id="confirm-complete-btn" disabled onclick="completeComat()">Mark as Received</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// USER ACCOUNTS
+const USERS = [
+  { username: 'admin',    password: 'porter123',  display: 'Admin',       role: 'Admin' },
+  { username: 'avixonics', password: 'porter1', display: 'NATHAN KAO', role: 'AMH' },
+  { username: 'techops',  password: 'techops1',   display: 'Tech Ops',    role: 'Tech Ops' },
+  { username: 'tvdisplay', password: 'tvdisplay',   display: 'TV Display',  role: 'Display' },
+  { username: 'wardaddy',  password: 'daddy',   display: 'KEITH ACKER',    role: 'DADDY' },
+  { username: 'blackhawkdown', password: 'kfc', display: 'JAMAIL JORDAN', role: 'AMH' },
+];
+
+// LOGIN
+let currentUser = null;
+
+function setUserBadgeStyle(user) {
+  const badge = document.querySelector('.user-badge');
+  const avatar = document.getElementById('user-avatar');
+  if (!badge || !avatar) return;
+  const isKeith = user && user.display && user.display.toUpperCase() === 'KEITH ACKER';
+  badge.classList.toggle('keith', isKeith);
+  avatar.classList.toggle('keith', isKeith);
+  document.body.classList.toggle('keith-theme', isKeith);
+  const isJamail = user && user.display && user.display.toUpperCase() === 'JAMAIL JORDAN';
+  badge.classList.toggle('jamail', isJamail);
+  avatar.classList.toggle('jamail', isJamail);
+  document.body.classList.toggle('jamail-theme', isJamail);
+}
+
+function doLogin() {
+  const u = document.getElementById('login-username').value.trim().toLowerCase();
+  const p = document.getElementById('login-password').value;
+  const user = USERS.find(x => x.username === u && x.password === p);
+  const errEl = document.getElementById('login-error');
+
+  if (!user) {
+    errEl.classList.add('show');
+    document.getElementById('login-password').value = '';
+    return;
+  }
+
+  errEl.classList.remove('show');
+  currentUser = user;
+  localStorage.setItem('porter_session', JSON.stringify({ username: user.username, display: user.display, role: user.role }));
+
+  document.getElementById('user-display').textContent = user.display;
+  document.getElementById('user-avatar').textContent = user.display.charAt(0).toUpperCase();
+  setUserBadgeStyle(user);
+
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app').style.display = 'block';
+
+  initApp();
+  showToast(`Welcome, ${user.display}`, 'success');
+  if (user.role === 'Display') {
+    setTimeout(startTvCycle, 800);
+  }
+}
+
+function loginKeydown(e) {
+  if (e.key === 'Enter') doLogin();
+}
+
+function doLogout() {
+  if (!confirm('Sign out?')) return;
+  stopTvCycle();
+  localStorage.removeItem('porter_session');
+  currentUser = null;
+  setUserBadgeStyle(null);
+  if (firebaseAuth && window.firebaseSignOut) {
+    window.firebaseSignOut(firebaseAuth).catch(() => {});
+  }
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-username').value = '';
+  document.getElementById('login-password').value = '';
+}
+
+function checkSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem('porter_session'));
+    if (!s) return;
+    const user = USERS.find(x => x.username === s.username);
+    if (!user) return;
+    currentUser = user;
+    document.getElementById('user-display').textContent = user.display;
+    document.getElementById('user-avatar').textContent = user.display.charAt(0).toUpperCase();
+    setUserBadgeStyle(user);
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app').style.display = 'block';
+    initApp();
+    if (user.role === 'Display') {
+      setTimeout(startTvCycle, 800);
+    }
+  } catch(e) {}
+}
+
+// DATA LAYER
+const STORAGE_KEY_FLIGHTS = 'porter_yyz_flights';
+const STORAGE_KEY_COMAT   = 'porter_yyz_comat';
+
+function saveFlights(data)  { localStorage.setItem(STORAGE_KEY_FLIGHTS, JSON.stringify(data)); }
+
+function getFlights() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY_FLIGHTS)) || []; }
+  catch { return []; }
+}
+function getComat() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY_COMAT)) || []; }
+  catch { return []; }
+}
+
+// FIREBASE DATA SYNC
+let firebaseDb = null;
+let firebaseAuth = null;
+let firebaseAuthenticated = false;
+let firebaseSyncStarted = false;
+let comatListener = null;
+
+// Initialize Firebase
+function initFirebase() {
+  // Firebase is now initialized in the module script above
+  if (window.firebaseDb && window.firebaseAuth && window.firebaseSignInAnonymously && window.firebaseOnAuthStateChanged) {
+    firebaseDb = window.firebaseDb;
+    firebaseAuth = window.firebaseAuth;
+    console.log('Firebase initialized (v9)');
+
+    window.firebaseOnAuthStateChanged(firebaseAuth, (user) => {
+      if (user) {
+        firebaseAuthenticated = true;
+        console.log('Firebase auth active:', user.uid);
+        if (!firebaseSyncStarted) {
+          firebaseSyncStarted = true;
+          checkFirebaseConnection();
+          startComatListener();
+        }
+      } else {
+        firebaseAuthenticated = false;
+        console.log('Firebase auth required; signing in anonymously...');
+        window.firebaseSignInAnonymously(firebaseAuth).catch(err => {
+          console.error('Firebase auth sign-in failed:', err);
+          updateSyncBanner('error', 'Firebase auth failed — local mode');
+        });
+      }
+    });
+  } else {
+    console.log('Firebase not ready yet');
+  }
+}
+
+function saveComat(data) {
+  if (!firebaseDb) {
+    localStorage.setItem(STORAGE_KEY_COMAT, JSON.stringify(data));
+    return;
+  }
+
+  const payload = Array.isArray(data)
+    ? data.reduce((obj, record) => {
+        if (!record || !record.id) return obj;
+        obj[record.id] = record;
+        return obj;
+      }, {})
+    : data;
+
+  const comatRef = window.firebaseRef(firebaseDb, 'comat_data');
+  window.firebaseSet(comatRef, payload).catch(err => {
+    console.error('Firebase save error, falling back to localStorage:', err);
+    localStorage.setItem(STORAGE_KEY_COMAT, JSON.stringify(data));
+  });
+}
+
+function normalizeComatFromFirebase(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  return Object.keys(value).sort().map(key => value[key]);
+}
+
+function getComatFromFirebase(callback) {
+  if (!firebaseDb) {
+    callback(JSON.parse(localStorage.getItem(STORAGE_KEY_COMAT)) || []);
+    return;
+  }
+  const comatRef = window.firebaseRef(firebaseDb, 'comat_data');
+  window.firebaseGet(comatRef).then((snapshot) => {
+    const data = normalizeComatFromFirebase(snapshot.val());
+    callback(data);
+  }).catch(err => {
+    console.error('Firebase fetch error, using localStorage:', err);
+    callback(JSON.parse(localStorage.getItem(STORAGE_KEY_COMAT)) || []);
+  });
+}
+
+function startComatListener() {
+  if (!firebaseDb) return;
+  
+  const comatRef = window.firebaseRef(firebaseDb, 'comat_data');
+  comatListener = window.firebaseOnValue(comatRef, (snapshot) => {
+    const data = normalizeComatFromFirebase(snapshot.val());
+    localStorage.setItem(STORAGE_KEY_COMAT, JSON.stringify(data));
+    renderComat();
+    updateSyncBanner('connected', user, ' ', 'updated');
+  }, (err) => {
+    console.error('Listener error:', err);
+    updateSyncBanner('error', 'Sync error — using local data');
+  });
+}
+
+// SYNC BANNER FUNCTIONS
+function updateSyncBanner(status, text) {
+  const banner = document.getElementById('sync-banner');
+  const statusEl = document.getElementById('sync-status');
+  const textEl = document.getElementById('sync-text');
+  
+  if (!banner || !statusEl || !textEl) return;
+  
+  banner.classList.add('show');
+  statusEl.className = `sync-status ${status}`;
+  textEl.textContent = text;
+  
+  // Auto-hide after 5 seconds for success messages
+  if (status === 'connected') {
+    setTimeout(() => banner.classList.remove('show'), 5000);
+  }
+}
+
+function checkFirebaseConnection() {
+  if (!firebaseDb || !firebaseAuthenticated) {
+    updateSyncBanner('error', 'Firebase not initialized — local mode');
+    return;
+  }
+
+  // Test connection by reading the permitted comat_data path.
+  const comatRef = window.firebaseRef(firebaseDb, 'comat_data');
+  window.firebaseGet(comatRef).then((snap) => {
+    updateSyncBanner('connected', 'Firebase connected — sync active');
+  }).catch(err => {
+    console.error('Firebase connection check failed:', err);
+    updateSyncBanner('error', 'Firebase connection failed — local mode');
+  });
+}
+
+// ════════════════════════════════════════════
+// AUTO REFRESH — every 1 minute
+// ════════════════════════════════════════════
+const REFRESH_INTERVAL = 1 * 60; // seconds
+let refreshSecondsLeft = REFRESH_INTERVAL;
+let refreshTimer = null;
+
+function startRefreshTimer() {
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshSecondsLeft = REFRESH_INTERVAL;
+  updateCountdownDisplay();
+
+  refreshTimer = setInterval(() => {
+    refreshSecondsLeft--;
+    updateCountdownDisplay();
+    if (refreshSecondsLeft <= 0) {
+      refreshSecondsLeft = REFRESH_INTERVAL;
+      autoRefresh();
+    }
+  }, 1000);
+}
+
+function updateCountdownDisplay() {
+  const m = Math.floor(refreshSecondsLeft / 60);
+  const s = refreshSecondsLeft % 60;
+  document.getElementById('refresh-countdown').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+}
+
+function autoRefresh() {
+  fetchLiveFlights();
+  showToast('Auto-refreshed flight data', 'info');
+}
+
+function manualRefresh() {
+  refreshSecondsLeft = REFRESH_INTERVAL;
+  updateCountdownDisplay();
+  fetchLiveFlights();
+}
+
+// FLIGHT DATA LOADING
+
+async function fetchLiveFlights() {
+  const icon = document.getElementById('refresh-icon');
+  icon.classList.add('spin');
+
+  // Always use sample data
+  loadSampleFlights();
+  icon.classList.remove('spin');
+}
+
+// SAMPLE FLIGHT DATA
+function loadSampleFlights() {
+  const now = new Date();
+  const hm = (h, m) => { const d = new Date(now); d.setHours(h, m, 0); return d.toISOString(); };
+
+  const flights = [
+    { id:'BR35', flight:'BR35', origin:'YYZ', dest:'TPE', destName:'Taipei', aircraft:'B777-300ER', std: hm(1,45), status:'Scheduled', gate:'-', tail:'-'},
+    { id:'PD153', flight:'PD153', origin:'YYZ', dest:'YOW', destName:'Ottawa', aircraft:'E195-E2', std: hm(7,0), status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD150', flight:'PD150', origin:'YOW', dest:'YYZ', destName:'Toronto', aircraft:'E195-E2', std: hm(8,9), status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD102', flight:'PD102', origin:'YUL', dest:'YYZ', destName:'Toronto', aircraft:'E195-E2', std: hm(8,13),  status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD113', flight:'PD113', origin:'YYZ', dest:'YUL', destName:'Montreal', aircraft:'E195-E2', std: hm(8,40),  status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD201', flight:'PD201', origin:'YYZ', dest:'YHZ', destName:'Halifax', aircraft:'E195-E2', std: hm(9,0),  status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD401', flight:'PD401', origin:'YYZ', dest:'YEG', destName:'Edmonton', aircraft:'E195-E2', std: hm(9,5),  status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD305', flight:'PD305', origin:'YYZ', dest:'YVR', destName:'Vancouver', aircraft:'E195-E2', std: hm(9,0), status:'Scheduled', gate:'-', tail:'-'},
+    { id:'PD353', flight:'PD353', origin:'YYZ', dest:'YYC', destName:'Calgary', aircraft:'E195-E2', std: hm(9,0), status:'Scheduled', gate:'-', tail:'-'},
+    { id:'PD154', flight:'PD154', origin:'YOW', dest:'YYZ', destName:'Toronto', aircraft:'E195-E2', std: hm(9,49), status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD311', flight:'PD311', origin:'YYZ', dest:'YVR', destName:'Vancouver', aircraft:'E195-E2', std: hm(10,50), status:'Scheduled', gate:'-', tail:'-'},
+    { id:'PD112', flight:'PD112', origin:'YUL', dest:'YYZ', destName:'Toronto', aircraft:'E195-E2', std: hm(12,28),  status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD205', flight:'PD205', origin:'YYZ', dest:'YHZ', destName:'Halifax', aircraft:'E195-E2', std: hm(12,30),  status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD402', flight:'PD402', origin:'YEG', dest:'YYZ', destName:'Toronto', aircraft:'E195-E2', std: hm(12,44),  status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD352', flight:'PD352', origin:'YYC', dest:'YYZ', destName:'Toronto', aircraft:'E195-E2', std: hm(12,59),  status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD423', flight:'PD423', origin:'YYZ', dest:'YWG', destName:'Winnipeg', aircraft:'E195-E2', std: hm(13,40),  status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD405', flight:'PD405', origin:'YYZ', dest:'YEG', destName:'Edmonton', aircraft:'E195-E2', std: hm(13,45),  status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD157', flight:'PD157', origin:'YYZ', dest:'YOW', destName:'Ottawa', aircraft:'E195-E2', std: hm(13,50), status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD302', flight:'PD302', origin:'YVR', dest:'YYZ', destName:'Toronto', aircraft:'E195-E2', std: hm(14,40), status:'Scheduled', gate:'-', tail:'-'},
+    { id:'PD125', flight:'PD125', origin:'YYZ', dest:'YUL', destName:'Montreal', aircraft:'E195-E2', std: hm(15,40), status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD120', flight:'PD120', origin:'YUL', dest:'YYZ', destName:'Toronto', aircraft:'E195-E2', std: hm(16,38),  status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD158', flight:'PD158', origin:'YOW', dest:'YYZ', destName:'Toronto', aircraft:'E195-E2', std: hm(17,9), status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD406', flight:'PD406', origin:'YEG', dest:'YYZ', destName:'Toronto', aircraft:'E195-E2', std: hm(18,04),  status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD207', flight:'PD207', origin:'YYZ', dest:'YHZ', destName:'Halifax', aircraft:'E195-E2', std: hm(18,10),  status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD427', flight:'PD427', origin:'YYZ', dest:'YWG', destName:'Winnipeg', aircraft:'E195-E2', std: hm(18,10),  status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD317', flight:'PD317', origin:'YYZ', dest:'YVR', destName:'Vancouver', aircraft:'E195-E2', std: hm(18,55), status:'Scheduled', gate:'-', tail:'-'},
+    { id:'PD165', flight:'PD165', origin:'YYZ', dest:'YOW', destName:'Ottawa', aircraft:'E195-E2', std: hm(19,0), status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD168', flight:'PD168', origin:'YOW', dest:'YYZ', destName:'Toronto', aircraft:'E195-E2', std: hm(19,45), status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD306', flight:'PD306', origin:'YVR', dest:'YYZ', destName:'Toronto', aircraft:'E195-E2', std: hm(19,50), status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD236', flight:'PD236', origin:'YYT', dest:'YYZ', destName:'Toronto', aircraft:'E195-E2', std: hm(21,5), status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD310', flight:'PD310', origin:'YVR', dest:'YYZ', destName:'Toronto', aircraft:'E195-E2', std: hm(21,30), status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD179', flight:'PD179', origin:'YYZ', dest:'YOW', destName:'Ottawa',  aircraft:'E195-E2', std: hm(23,20),status:'Scheduled', gate:'-', tail:'-' },
+    { id:'PD', flight: 'PD', origin:'PLACEHOLDER', dest:'PLACEHOLDER', destName:'PLACEHOLDER AIRPORT', aircraft:'PLACEHOLDER AIRCRAFT', std: hm(23,59), status:'N/A', gate:'AOG', tail:'PLACEHOLDER'},
+  ];
+
+  saveFlights(flights);
+  renderFlights();
+  updateFlightDropdown();
+  document.getElementById('flight-last-updated').textContent = 'KNOWN data — updated ' + new Date().toLocaleTimeString();
+  document.getElementById('live-badge').style.display = 'none';
+  document.getElementById('refresh-icon').classList.remove('spin');
+}
+
+function computeFlightStatus(stdIso, delayMin = 0, rawStatus = '', isInbound = false) {
+  if (['Cancelled', 'N/A'].includes(rawStatus)) return rawStatus;
+  if (!stdIso) return rawStatus || 'Scheduled';
+
+  const scheduled = new Date(stdIso).getTime();
+  if (Number.isNaN(scheduled)) return rawStatus || 'Scheduled';
+
+  const now = Date.now();
+  const delayMs = (delayMin || 0) * 60000;
+  const effectiveTime = scheduled + delayMs;
+  const loadingWindow  = 30 * 60 * 1000; // 30 min before departure
+  const unloadingWindow = 20 * 60 * 1000; // 20 min before arrival
+  const completedWindow = 60 * 60 * 1000; // hide after 1 hr (tracked separately)
+
+  if (isInbound) {
+    // For arrivals: "Arriving" 20 min before STA, "Unloading" at/after STA, "Arrived" after STA+30min
+    const arrivedWindow = 30 * 60 * 1000;
+    if (now >= effectiveTime + arrivedWindow) return 'Arrived';
+    if (now >= effectiveTime) return 'Unloading';
+    if (now >= effectiveTime - unloadingWindow) return 'Arriving';
+    if (delayMin > 0) return 'Delayed';
+    return 'Scheduled';
+  } else {
+    const departedWindow = 10 * 60 * 1000;
+    if (now >= effectiveTime + departedWindow) return 'Departed';
+    if (now >= effectiveTime - loadingWindow) return 'Loading';
+    if (delayMin > 0) return 'Delayed';
+    return 'Scheduled';
+  }
+}
+
+// TAB NAVIGATION
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('page-' + name).classList.add('active');
+  if (name === 'comat')  renderComat();
+  if (name === 'manage') updateFlightDropdown();
+}
+
+let currentSubTab = 'all';
+function switchSubTab(name, btn) {
+  currentSubTab = name;
+  document.querySelectorAll('.sub-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const labels = { all:'All COMAT', outbound:'Outbound COMAT', inbound:'Inbound COMAT', completed:'Completed / Received' };
+  document.getElementById('comat-table-label').textContent = labels[name];
+  renderComat();
+}
+
+
+// RENDER: FLIGHTS
+function renderFlights() {
+  const flights = getFlights();
+  const comat   = getComat();
+  const search  = document.getElementById('flight-search').value.toLowerCase();
+  const filter  = document.getElementById('flight-status-filter').value;
+  const sort    = document.getElementById('flight-sort') ? document.getElementById('flight-sort').value : 'time';
+  const now     = Date.now();
+  const ONE_HOUR = 60 * 60 * 1000;
+
+  const enhancedFlights = flights.map(f => {
+    const isInbound = f.origin !== 'YYZ';
+    return {
+      ...f,
+      isInbound,
+      status: computeFlightStatus(f.std, f.delay, f.status, isInbound),
+    };
+  });
+
+  // Hide departed/arrived flights after 1 hour, but they reappear next day automatically (sample data reloads each day)
+  const visibleFlights = enhancedFlights.filter(f => {
+    if (f.status === 'Departed' || f.status === 'Arrived') {
+      const effectiveTime = new Date(f.std).getTime() + ((f.delay||0) * 60000);
+      const completedAt   = effectiveTime + 10 * 60 * 1000; // ~time it finished
+      if (now - completedAt > ONE_HOUR) return false;
+    }
+    return true;
+  });
+
+  let list = visibleFlights.filter(f => {
+    const matchSearch = !search ||
+      (f.flight||'').toLowerCase().includes(search) ||
+      (f.dest||'').toLowerCase().includes(search) ||
+      (f.destName||'').toLowerCase().includes(search);
+    const matchStatus = !filter || f.status === filter;
+    return matchSearch && matchStatus;
+  });
+
+  // Sorting
+  if (sort === 'flight_asc') {
+    list.sort((a, b) => (a.flight||'').localeCompare(b.flight||'', undefined, {numeric:true}));
+  } else {
+    list.sort((a, b) => new Date(a.std) - new Date(b.std));
+  }
+
+  document.getElementById('flight-count').textContent = visibleFlights.length;
+
+  const delayed = visibleFlights.filter(f => f.status === 'Delayed').length;
+  const stats = [
+    { label:'Total Flights', value: visibleFlights.length, cls:'' },
+    { label:'Departed/Arrived', value: visibleFlights.filter(f=>f.status==='Departed'||f.status==='Arrived').length, cls:'red' },
+    { label:'Loading/Arriving', value: visibleFlights.filter(f=>f.status==='Loading'||f.status==='Arriving'||f.status==='Unloading').length, cls:'gold' },
+    { label:'Scheduled', value: visibleFlights.filter(f=>f.status==='Scheduled').length, cls:'teal' },
+    { label:'Delayed',   value: delayed, cls: delayed > 0 ? 'red' : '' },
+  ];
+  document.getElementById('flight-stats').innerHTML = stats.map(s =>
+    `<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-value ${s.cls}">${s.value}</div></div>`
+  ).join('');
+
+  const tbody = document.getElementById('flights-tbody');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">✈</div><div class="empty-label">No flights found. Click Refresh to load flights.</div></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(f => {
+    const hasCom = comat.filter(c => c.flightId === f.id && c.status !== 'completed').length;
+    const dir = f.isInbound ? 'INBOUND' : 'OUTBOUND';
+    const badge = dir === 'OUTBOUND' ? '<span class="badge badge-outbound">OUT</span>' : '<span class="badge badge-inbound">IN</span>';
+
+    // For delayed flights, show countdown instead of "Delayed"
+    let statusBadge;
+    if (f.status === 'Delayed') {
+      const effectiveTime = new Date(f.std).getTime() + ((f.delay||0)*60000);
+      const minsLeft = Math.max(0, Math.round((effectiveTime - now) / 60000));
+      const hh = Math.floor(minsLeft / 60);
+      const mm = minsLeft % 60;
+      const countdownStr = hh > 0 ? `${hh}h ${mm}m` : `${mm}m`;
+      statusBadge = `<span class="badge badge-delayed" title="Delayed — departs/arrives in ${countdownStr}">⚠ ${countdownStr}</span>`;
+    } else {
+      statusBadge = {
+        'Departed':  '<span class="badge badge-departed">Departed</span>',
+        'Arrived':   '<span class="badge badge-inbound">Arrived</span>',
+        'Loading':   '<span class="badge badge-loading">Loading</span>',
+        'Arriving':  '<span class="badge badge-unloading">✈ Arriving</span>',
+        'Unloading': '<span class="badge badge-unloading">⬇ Unloading</span>',
+        'Scheduled': '<span class="badge badge-scheduled">Scheduled</span>',
+        'Cancelled': '<span class="badge badge-departed">Cancelled</span>',
+      }[f.status] || `<span class="badge badge-scheduled">${f.status}</span>`;
+    }
+
+    const time = new Date(f.std).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
+    // CTDWN cell: countdown from now to effective departure/arrival time
+    const effectiveTimeD = new Date(f.std).getTime() + ((f.delay || 0) * 60000);
+    const secsLeft = Math.round((effectiveTimeD - now) / 1000);
+    let delayCell;
+    if (secsLeft <= 0) {
+      delayCell = `<span style="color:var(--text-muted);font-family:var(--font-mono);font-size:18px;">—</span>`;
+    } else {
+      const hhC = Math.floor(secsLeft / 3600);
+      const mmC = Math.floor((secsLeft % 3600) / 60);
+      const ssC = secsLeft % 60;
+      const ctdwn = hhC > 0
+        ? `${hhC}h ${String(mmC).padStart(2,'0')}m`
+        : `${String(mmC).padStart(2,'0')}m ${String(ssC).padStart(2,'0')}s`;
+      const cdColor = secsLeft < 1800 ? 'var(--porter-red)' : secsLeft < 3600 ? 'var(--porter-gold)' : 'var(--porter-teal)';
+      delayCell = `<span style="color:${cdColor};font-family:var(--font-mono);font-size:18px;">${ctdwn}</span>`;
+    }
+
+    return `<tr onclick="flightRowClick('${f.id}')">
+      <td class="mono" style="color:var(--porter-teal)">${f.flight}</td>
+      <td>${badge} ${f.origin}→${f.dest} <span style="color:var(--text-muted); font-size:12px;">${f.destName}</span></td>
+      <td class="muted">${f.aircraft}</td>
+      <td class="mono">${time}</td>
+      <td>${delayCell}</td>
+      <td>${statusBadge}</td>
+      <td class="mono">${f.gate}</td>
+      <td>${hasCom ? `<span class="badge badge-outbound">${hasCom} item${hasCom>1?'s':''}</span>` : '<span style="color:var(--text-muted);font-size:12px;">—</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function flightRowClick(id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn')[2].classList.add('active');
+  document.getElementById('page-manage').classList.add('active');
+  updateFlightDropdown();
+  setTimeout(() => { document.getElementById('form-flight').value = id; }, 50);
+}
+
+// RENDER: COMAT DASHBOARD
+let selectedComatId = null;
+
+function renderComat() {
+  const comat   = getComat();
+  const flights = getFlights();
+  const search  = (document.getElementById('comat-search').value || '').toLowerCase();
+
+  const active    = comat.filter(c => c.status !== 'completed');
+  const outbound  = active.filter(c => c.direction === 'OUTBOUND');
+  const inbound   = active.filter(c => c.direction === 'INBOUND');
+  const completed = comat.filter(c => c.status === 'completed');
+  document.getElementById('comat-count').textContent = active.length;
+
+  document.getElementById('comat-stats').innerHTML = [
+    { label:'Active COMAT', value: active.length,    cls: '' },
+    { label:'Outbound',     value: outbound.length,  cls: 'gold' },
+    { label:'Inbound',      value: inbound.length,   cls: 'teal' },
+    { label:'Completed',    value: completed.length, cls: 'green' },
+  ].map(s => `<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-value ${s.cls}">${s.value}</div></div>`).join('');
+
+  let list = comat.filter(c => {
+    if (currentSubTab === 'completed') return c.status === 'completed';
+    if (currentSubTab === 'outbound')  return c.direction === 'OUTBOUND' && c.status !== 'completed';
+    if (currentSubTab === 'inbound')   return c.direction === 'INBOUND'  && c.status !== 'completed';
+    if (currentSubTab === 'all')       return c.status !== 'completed';  // ALL = active only
+    return c.status !== 'completed';
+  });
+
+  if (search) {
+    list = list.filter(c =>
+      (c.orderNumber||'').toLowerCase().includes(search) ||
+      (c.partNumber||'').toLowerCase().includes(search) ||
+      (c.flightId||'').toLowerCase().includes(search) ||
+      (c.description||'').toLowerCase().includes(search)
+    );
+  }
+
+  document.getElementById('comat-record-count').textContent = `${list.length} record${list.length !== 1 ? 's' : ''}`;
+
+  const tbody = document.getElementById('comat-tbody');
+  if (!list.length) {
+    const labels = { all:'COMAT', outbound:'outbound COMAT', inbound:'inbound COMAT', completed:'completed records' };
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">📦</div><div class="empty-label">No ${labels[currentSubTab]} found.</div></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(c => {
+    const f = flights.find(f => f.id === c.flightId);
+    const route = f ? `${f.origin}→${f.dest}` : '—';
+    const dirBadge = c.direction === 'OUTBOUND'
+      ? '<span class="badge badge-outbound">⬆ OUT</span>'
+      : '<span class="badge badge-inbound">⬇ IN</span>';
+    const completeBadge = c.status === 'completed' ? '<span class="badge badge-completed">✓ Received</span>' : dirBadge;
+    const addedDate = new Date(c.addedAt).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+
+    const actions = c.status !== 'completed'
+      ? `<button class="btn btn-ghost btn-sm" onclick="openDetailModal('${c.id}', event)">View</button>`
+      : `<span style="color:var(--text-muted); font-size:12px;">—</span>`;
+
+    return `<tr class="${c.status === 'completed' ? 'completed-row' : ''}" onclick="openDetailModal('${c.id}', event)">
+      <td class="mono" style="color:var(--porter-teal)">${c.flightId}</td>
+      <td class="mono">${route}</td>
+      <td class="mono">${c.orderNumber || '—'}</td>
+      <td class="mono">${c.partNumber || '—'}</td>
+      <td>${c.description}</td>
+      <td class="mono">${c.quantity}</td>
+      <td class="muted" style="font-size:12px;">${addedDate}</td>
+      <td>${completeBadge}</td>
+      <td onclick="event.stopPropagation()">${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+// DETAIL MODAL
+function openDetailModal(id, e) {
+  if (e) e.stopPropagation();
+  selectedComatId = id;
+  const comat   = getComat();
+  const flights = getFlights();
+  const c = comat.find(c => c.id === id);
+  if (!c) return;
+  const f = flights.find(f => f.id === c.flightId);
+
+  document.getElementById('detail-modal-title').textContent = `COMAT — ${c.flightId} (${c.direction})`;
+  const completed = c.status === 'completed';
+
+  document.getElementById('detail-modal-body').innerHTML = `
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+      ${c.direction === 'OUTBOUND' ? '<span class="badge badge-outbound">⬆ Outbound</span>' : '<span class="badge badge-inbound">⬇ Inbound</span>'}
+      ${completed ? '<span class="badge badge-completed">✓ Received</span>' : ''}
+    </div>
+    <div class="detail-grid">
+      <div class="detail-item"><div class="detail-item-label">Flight</div><div class="detail-item-value">${c.flightId}</div></div>
+      <div class="detail-item"><div class="detail-item-label">Route</div><div class="detail-item-value">${f ? f.origin+'→'+f.dest : '—'}</div></div>
+      <div class="detail-item"><div class="detail-item-label">Order #</div><div class="detail-item-value">${c.orderNumber || 'N/A'}</div></div>
+      <div class="detail-item"><div class="detail-item-label">Person Responsible</div><div class="detail-item-value">${c.partNumber || '—'}</div></div>
+      <div class="detail-item"><div class="detail-item-label">Pieces</div><div class="detail-item-value">${c.quantity}</div></div>
+      <div class="detail-item"><div class="detail-item-label">Added</div><div class="detail-item-value" style="font-size:12px;">${new Date(c.addedAt).toLocaleString()}</div></div>
+      <div class="detail-item" style="grid-column:1/-1"><div class="detail-item-label">Description</div><div class="detail-item-value" style="font-size:14px; font-family:var(--font-ui);">${c.description}</div></div>
+      ${c.notes ? `<div class="detail-item" style="grid-column:1/-1"><div class="detail-item-label">Notes</div><div class="detail-item-value" style="font-size:13px; font-family:var(--font-ui); color:var(--text-secondary);">${c.notes}</div></div>` : ''}
+      ${completed ? `<div class="detail-item" style="grid-column:1/-1"><div class="detail-item-label">Received at</div><div class="detail-item-value" style="font-size:12px;">${new Date(c.completedAt).toLocaleString()}</div></div>` : ''}
+    </div>`;
+
+  const removeBtn  = document.getElementById('detail-remove-btn');
+  const confirmBtn = document.getElementById('detail-confirm-btn');
+
+  if (completed) {
+    removeBtn.style.display  = 'none';
+    confirmBtn.style.display = 'none';
+  } else {
+    removeBtn.style.display  = 'inline-flex';
+    confirmBtn.style.display = 'inline-flex';
+    removeBtn.onclick  = () => removeComat(id);
+    confirmBtn.onclick = () => { closeModal('detail-modal'); openConfirmModal(id); };
+  }
+
+  openModal('detail-modal');
+}
+
+
+// CONFIRM RECEIPT
+
+function openConfirmModal(id) {
+  selectedComatId = id;
+  const c = getComat().find(c => c.id === id);
+  if (!c) return;
+
+  const checks = [
+    `Order number verified: ${c.orderNumber || 'N/A'}`,
+    `Person responsible confirmed: ${c.partNumber || 'N/A'}`,
+    `Pieces confirmed: ${c.quantity} piece${c.quantity > 1 ? 's' : ''}`,
+    `Description matches: ${c.description}`,
+    'Item physically received and inspected',
+  ];
+
+  document.getElementById('confirm-checks').innerHTML = checks.map((label, i) =>
+    `<label class="check-item" id="check-${i}">
+      <input type="checkbox" onchange="updateConfirmBtn()" id="chk-${i}">
+      <span class="check-item-label">${label}</span>
+    </label>`
+  ).join('');
+
+  document.getElementById('confirm-complete-btn').disabled = true;
+  openModal('confirm-modal');
+}
+
+function updateConfirmBtn() {
+  const checks = document.querySelectorAll('#confirm-checks input[type="checkbox"]');
+  const allChecked = [...checks].every(c => c.checked);
+  document.getElementById('confirm-complete-btn').disabled = !allChecked;
+  checks.forEach((chk, i) => {
+    document.getElementById('check-' + i).classList.toggle('checked', chk.checked);
+  });
+}
+
+function completeComat() {
+  const comat = getComat();
+  const idx = comat.findIndex(c => c.id === selectedComatId);
+  if (idx === -1) return;
+  comat[idx].status      = 'completed';
+  comat[idx].completedAt = new Date().toISOString();
+  saveComat(comat);
+  closeModal('confirm-modal');
+  renderComat();
+  showToast('COMAT marked as received', 'success');
+}
+
+
+// REMOVE COMAT
+
+function removeComat(id) {
+  if (!confirm('Remove this COMAT record? This cannot be undone.')) return;
+  const comat = getComat().filter(c => c.id !== id);
+  saveComat(comat);
+  closeModal('detail-modal');
+  renderComat();
+  showToast('COMAT record removed', 'danger');
+}
+
+// ADD COMAT FORM
+function updateFlightDropdown() {
+  const flights = getFlights();
+  const sel = document.getElementById('form-flight');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Choose a flight —</option>' +
+    flights.map(f => {
+      const dir = f.origin === 'YYZ' ? 'OUT' : 'IN';
+      const time = new Date(f.std).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      return `<option value="${f.id}">[${dir}] ${f.flight} — ${f.origin}→${f.dest} @ ${time}</option>`;
+    }).join('');
+  if (cur) sel.value = cur;
+}
+
+function addComat() {
+  const flightId    = document.getElementById('form-flight').value;
+  const orderNumber = document.getElementById('form-orderNumber').value.trim();
+  const partNumber  = document.getElementById('form-part').value.trim();
+  const qty         = parseInt(document.getElementById('form-qty').value) || 1;
+  const desc        = document.getElementById('form-desc').value;
+  const notes       = document.getElementById('form-notes').value.trim();
+
+  if (!flightId)   { showToast('Please select a flight', 'danger'); return; }
+  if (!partNumber) { showToast('Person Responsible is required', 'danger'); return; }
+  if (!desc)       { showToast('Please select a Description priority', 'danger'); return; }
+
+  
+  // Determine direction from selected flight
+  const flights = getFlights();
+  const flight = flights.find(f => f.id === flightId);
+  const direction = (flight && flight.origin === 'YYZ') ? 'OUTBOUND' : 'INBOUND';
+
+  const record = {
+    id:          'COM-' + Date.now(),
+    flightId,
+    direction,
+    orderNumber: orderNumber || null,
+    partNumber:  partNumber || null,
+    quantity:    qty,
+    description: desc || null,
+    notes:       notes || null,
+    status:      'active',
+    addedAt:     new Date().toISOString(),
+    addedBy:     currentUser ? currentUser.display : 'Unknown',
+  };
+
+  const comat = getComat();
+  comat.push(record);
+  saveComat(comat);
+  clearForm();
+  renderComat();
+  document.getElementById('comat-count').textContent = comat.filter(c=>c.status!=='completed').length;
+  showToast(`COMAT added to ${flightId}`, 'success');
+}
+
+function clearForm() {
+  ['form-flight','form-orderNumber','form-part','form-notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('form-qty').value = '1';
+  const descSel = document.getElementById('form-desc');
+  if (descSel) descSel.value = '';
+}
+
+// ════════════════════════════════════════════
+// MODAL HELPERS
+// ════════════════════════════════════════════
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+// ════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════
+function showToast(msg, type = 'success') {
+  const icons = { success:'✓', danger:'✕', info:'ℹ' };
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.innerHTML = `<span class="toast-icon">${icons[type]||'•'}</span> ${msg}`;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ════════════════════════════════════════════
+// TV DISPLAY — auto-cycle between Flight Info and COMAT Dashboard
+// ════════════════════════════════════════════
+let tvCycleInterval = null;
+let tvCycleTimeout  = null;
+const TV_CYCLE_SECS = 23; // seconds per tab
+
+function isTvDisplay() {
+  return currentUser && currentUser.role === 'Display';
+}
+
+function startTvCycle() {
+  if (!isTvDisplay()) return;
+  stopTvCycle();
+  const bar   = document.getElementById('tv-cycle-bar');
+  const prog  = document.getElementById('tv-cycle-progress');
+  const label = document.getElementById('tv-cycle-label');
+  if (bar)   bar.classList.add('visible');
+  if (label) label.classList.add('visible');
+
+  const tabs = ['flights', 'comat'];
+  let tabIdx = 0;
+
+  function cycleToTab() {
+    const name = tabs[tabIdx];
+    const btn  = document.querySelectorAll('.tab-btn')[name === 'flights' ? 0 : 1];
+    if (btn) switchTab(name, btn);
+    if (label) label.textContent = `AUTO — switching to ${name === 'flights' ? 'COMAT Dashboard' : 'Flight Info'} in ${TV_CYCLE_SECS}s`;
+
+    // Animate progress bar
+    if (prog) {
+      prog.style.transition = 'none';
+      prog.style.width = '0%';
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          prog.style.transition = `width ${TV_CYCLE_SECS}s linear`;
+          prog.style.width = '100%';
+        });
+      });
+    }
+
+    tabIdx = (tabIdx + 1) % tabs.length;
+  }
+
+  cycleToTab();
+  tvCycleInterval = setInterval(cycleToTab, TV_CYCLE_SECS * 1000);
+}
+
+function stopTvCycle() {
+  if (tvCycleInterval) { clearInterval(tvCycleInterval); tvCycleInterval = null; }
+  if (tvCycleTimeout)  { clearTimeout(tvCycleTimeout);  tvCycleTimeout  = null; }
+  const bar   = document.getElementById('tv-cycle-bar');
+  const label = document.getElementById('tv-cycle-label');
+  if (bar)   bar.classList.remove('visible');
+  if (label) label.classList.remove('visible');
+}
+
+// ════════════════════════════════════════════
+// Auto re-render flights every 1s to update live countdown timers and status
+// ════════════════════════════════════════════
+setInterval(() => {
+  if (document.getElementById('page-flights').classList.contains('active')) {
+    renderFlights();
+  }
+}, 1000);
+
+// ════════════════════════════════════════════
+// CLOCK
+// ════════════════════════════════════════════
+function updateClock() {
+  const utc = new Date().toUTCString().match(/(\d{2}:\d{2}:\d{2})/);
+  document.getElementById('clock').textContent = utc ? utc[1] + ' UTC' : '';
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+function initApp() {
+  // Show sync banner immediately
+  updateSyncBanner('loading', 'Initializing sync...');
+
+  // Wait for Firebase to load, then initialize
+  let firebaseCheckAttempts = 0;
+  const checkFirebaseReady = () => {
+    firebaseCheckAttempts++;
+    if (window.firebaseDb && window.firebaseAuth) {
+      initFirebase();
+    } else if (firebaseCheckAttempts > 50) { // 5 seconds timeout
+      updateSyncBanner('error', 'Firebase failed to load — local mode only');
+    } else {
+      setTimeout(checkFirebaseReady, 100);
+    }
+  };
+  checkFirebaseReady();
+
+  // Initialize flights
+  if (!getFlights().length) {
+    fetchLiveFlights();
+  } else {
+    renderFlights();
+    updateFlightDropdown();
+  }
+
+  // Initialize COMAT data - render immediately with localStorage, then update with Firebase
+  renderComat(); // Render with whatever is in localStorage initially
+
+  // Wait for Firebase auth+DB, then get data
+  let dataCheckAttempts = 0;
+  const checkFirebaseForData = () => {
+    dataCheckAttempts++;
+    if (window.firebaseDb && firebaseAuthenticated && firebaseAuth && firebaseAuth.currentUser) {
+      getComatFromFirebase(data => {
+        localStorage.setItem(STORAGE_KEY_COMAT, JSON.stringify(data));
+        renderComat(); // Re-render with Firebase data
+      });
+    } else if (dataCheckAttempts > 50) { // Give up after 5 seconds
+      // Stay with localStorage data
+    } else {
+      setTimeout(checkFirebaseForData, 100);
+    }
+  };
+  checkFirebaseForData();
+
+  // Start refresh timer
+  startRefreshTimer();
+}
+
+// Check for existing session on page load
+window.addEventListener('load', checkSession);
+</script>
+</body>
+</html>
