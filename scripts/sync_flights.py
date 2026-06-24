@@ -1,6 +1,8 @@
 """
 Porter YYZ Flight Sync
 Fetches live flight data from radar.flyporter.com and writes it to a Google Sheet.
+Filters to flights touching YYZ only, picks the gate/status/time relevant to YYZ
+depending on whether the flight is arriving or departing there.
 Run manually or via GitHub Actions on a schedule.
 """
 
@@ -8,14 +10,19 @@ import os
 import json
 import requests
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import gspread
 from google.oauth2.service_account import Credentials
 
 # ── CONFIG ──────────────────────────────────────────────────────────────────
-PORTER_URL   = "https://radar.flyporter.com/flightinformation/get?nocache=true"
-SHEET_ID     = os.environ["GOOGLE_SHEET_ID"]       # set in GitHub Actions secrets
-SHEET_TAB    = "Flights"                            # tab name inside the spreadsheet
+PORTER_URL    = "https://radar.flyporter.com/flightinformation/get?nocache=true"
+SHEET_ID      = os.environ["GOOGLE_SHEET_ID"]       # set in GitHub Actions secrets
+SHEET_TAB     = "Flights"                            # tab name inside the spreadsheet
+HOME_AIRPORT  = "YYZ"
+
+# How many days around "today" to keep (the feed spans multiple days of history/future).
+# 0 = today only. 1 = today +/- 1 day. Adjust to taste.
+DATE_WINDOW_DAYS = 1
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -26,14 +33,16 @@ HEADERS = [
     "Flight",
     "Origin",
     "Destination",
-    "Aircraft",
-    "Scheduled (STD)",
+    "Direction",          # ARRIVAL or DEPARTURE (relative to YYZ)
+    "Scheduled Time",      # local time, YYZ-relevant leg
+    "Estimated Time",
     "Status",
     "Gate",
     "Tail Number",
-    "Direction",
+    "Codeshare",
     "Last Updated (UTC)",
 ]
+
 
 # ── AUTH ─────────────────────────────────────────────────────────────────────
 def get_sheet():
@@ -44,11 +53,10 @@ def get_sheet():
     client = gspread.authorize(creds)
     spreadsheet = client.open_by_key(SHEET_ID)
 
-    # Create the tab if it doesn't exist yet
     try:
         sheet = spreadsheet.worksheet(SHEET_TAB)
     except gspread.WorksheetNotFound:
-        sheet = spreadsheet.add_worksheet(title=SHEET_TAB, rows=200, cols=len(HEADERS))
+        sheet = spreadsheet.add_worksheet(title=SHEET_TAB, rows=500, cols=len(HEADERS))
 
     return sheet
 
@@ -56,51 +64,74 @@ def get_sheet():
 # ── FETCH ────────────────────────────────────────────────────────────────────
 def fetch_flights():
     """Fetch XML from Porter's radar endpoint and parse into a list of row dicts."""
-    resp = requests.get(PORTER_URL, timeout=15)
+    resp = requests.get(PORTER_URL, timeout=20)
     resp.raise_for_status()
 
     root = ET.fromstring(resp.content)
+    now_utc = datetime.now(timezone.utc)
+    now_utc_str = now_utc.strftime("%Y-%m-%d %H:%M UTC")
 
-    # DEBUG: print one complete <item> element so we can see every field name
-    # with nothing truncated. Remove this block once the mapping below is confirmed.
-    first_item = root.find(".//item")
-    if first_item is not None:
-        print("──── SAMPLE ITEM (full) ────")
-        print(ET.tostring(first_item, encoding="unicode"))
-        print("─────────────────────────────")
+    today = datetime.now().date()
+    valid_dates = {
+        (today + timedelta(days=d)).isoformat()
+        for d in range(-DATE_WINDOW_DAYS, DATE_WINDOW_DAYS + 1)
+    }
 
-    now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     rows = []
 
-    # Porter's feed is RSS-style: each flight is an <item> directly under <channel>.
-    for flight in root.iter("item"):
+    for item in root.iter("item"):
         def get(tag, default="-"):
-            el = flight.find(tag)
+            el = item.find(tag)
             return el.text.strip() if el is not None and el.text else default
 
-        flight_num = get("flightNumber")
-        origin     = get("departureAirportCode")
-        dest       = get("destinationAirportCode")
-        aircraft   = get("aircraftType")       # ← unconfirmed, may not be the real tag name
-        std        = get("estimatedDepartureTime") if get("estimatedDepartureTime") != "-" else get("scheduledDepartureTime")
-        status     = get("flightStatus")       # ← unconfirmed, may not be the real tag name
-        gate       = get("departureGate")      # ← unconfirmed, may not be the real tag name
+        flight_date = get("flightDate")
+        if flight_date not in valid_dates:
+            continue  # outside our date window — skip
+
+        origin = get("departureAirportCode")
+        dest   = get("destinationAirportCode")
+
+        if origin != HOME_AIRPORT and dest != HOME_AIRPORT:
+            continue  # doesn't touch YYZ at all — skip
+
+        flight_num = get("flightNumber").replace(" ", "")
         tail       = get("tailNumber")
 
-        direction  = "OUTBOUND" if origin == "YYZ" else "INBOUND"
+        # Codeshare number lives in a nested <codeshare><codeshareFlightNumber> element
+        codeshare_el = item.find("codeshare/codeshareFlightNumber")
+        codeshare = codeshare_el.text.strip() if codeshare_el is not None and codeshare_el.text else "-"
+
+        if dest == HOME_AIRPORT:
+            # This leg is an arrival INTO YYZ — use destination-side fields
+            direction  = "ARRIVAL"
+            gate       = get("destinationGate")
+            status     = get("arrivalStatus")
+            scheduled  = get("scheduledArrivalTime")
+            estimated  = get("estimatedArrivalTime")
+        else:
+            # This leg is a departure FROM YYZ — use departure-side fields
+            direction  = "DEPARTURE"
+            gate       = get("departureGate")
+            status     = get("departureStatus")
+            scheduled  = get("scheduledDepartureTime")
+            estimated  = get("estimatedDepartureTime")
 
         rows.append([
             flight_num,
             origin,
             dest,
-            aircraft,
-            std,
+            direction,
+            scheduled,
+            estimated,
             status,
             gate,
             tail,
-            direction,
-            now_utc,
+            codeshare,
+            now_utc_str,
         ])
+
+    # Sort by scheduled time so the sheet reads top-to-bottom chronologically
+    rows.sort(key=lambda r: r[4])
 
     return rows
 
@@ -110,14 +141,13 @@ def write_to_sheet(sheet, rows):
     """Clear the sheet and rewrite all rows atomically."""
     all_data = [HEADERS] + rows
     sheet.clear()
-    sheet.update("A1", all_data, value_input_option="USER_ENTERED")
+    sheet.update(values=all_data, range_name="A1")  # keyword args avoid the deprecation warning
 
-    # Bold the header row
-    sheet.format("A1:J1", {
+    sheet.format("A1:K1", {
         "textFormat": {"bold": True},
         "backgroundColor": {"red": 0.2, "green": 0.2, "blue": 0.2},
     })
-    print(f"✓ Wrote {len(rows)} flights to sheet '{SHEET_TAB}' at {datetime.now(timezone.utc).strftime('%H:%M UTC')}")
+    print(f"Wrote {len(rows)} YYZ flights to sheet '{SHEET_TAB}' at {datetime.now(timezone.utc).strftime('%H:%M UTC')}")
 
 
 # ── MAIN ─────────────────────────────────────────────────────────────────────
@@ -126,16 +156,16 @@ if __name__ == "__main__":
     try:
         rows = fetch_flights()
         if not rows:
-            print("⚠ No flights found in response — check XML tag names (see NOTE in fetch_flights)")
+            print("No YYZ flights found in the current date window — check DATE_WINDOW_DAYS or HOME_AIRPORT")
         else:
             sheet = get_sheet()
             write_to_sheet(sheet, rows)
     except requests.RequestException as e:
-        print(f"✗ Network error: {e}")
+        print(f"Network error: {e}")
         raise
     except ET.ParseError as e:
-        print(f"✗ XML parse error: {e}")
+        print(f"XML parse error: {e}")
         raise
     except Exception as e:
-        print(f"✗ Unexpected error: {e}")
+        print(f"Unexpected error: {e}")
         raise
