@@ -17,6 +17,11 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Pin Node to a version without the googleapis fetch bug
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
