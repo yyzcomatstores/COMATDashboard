@@ -9,6 +9,10 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      # Node 24.17.0 (now the GitHub Actions default) has a confirmed bug breaking
+      # requests to *.googleapis.com — this forces actions back onto Node 20 to avoid it.
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -18,5 +22,5 @@ jobs:
         with:
           repoToken: "${{ secrets.GITHUB_TOKEN }}"
           firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
-          projectId: yyz-stores-1a98f    # ← replace with your real project ID
+          projectId: yyz-stores-1a98f
           channelId: live
