@@ -1336,7 +1336,7 @@ function startComatListener() {
     const data = normalizeComatFromFirebase(snapshot.val());
     localStorage.setItem(STORAGE_KEY_COMAT, JSON.stringify(data));
     renderComat();
-    updateSyncBanner('connected', user, ' ', 'updated');
+    updateSyncBanner('connected', 'Synced — COMAT data updated');
   }, (err) => {
     console.error('Listener error:', err);
     updateSyncBanner('error', 'Sync error — using local data');
