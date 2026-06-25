@@ -673,6 +673,84 @@
   .sync-status.loading .sync-dot { background: var(--text-secondary); }
   .sync-status.connected .sync-dot { background: var(--porter-green); }
   .sync-status.error .sync-dot { background: var(--porter-red); }
+  /* ── CHAT ───────────────────────────────────────────── */
+  .chat-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    height: calc(100vh - 220px);
+    min-height: 360px;
+    overflow: hidden;
+  }
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .chat-msg {
+    max-width: 70%;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    align-self: flex-start;
+  }
+  .chat-msg.own {
+    align-self: flex-end;
+    background: var(--porter-teal-dim);
+    border-color: var(--porter-teal-border);
+  }
+  .chat-msg-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 3px;
+    font-family: var(--font-mono);
+  }
+  .chat-msg-text {
+    font-size: 14px;
+    color: var(--text-primary);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .chat-empty {
+    color: var(--text-muted);
+    font-size: 13px;
+    text-align: center;
+    margin-top: 24px;
+  }
+  .chat-typing {
+    min-height: 22px;
+    padding: 0 16px;
+    font-size: 12px;
+    font-style: italic;
+    color: var(--text-muted);
+  }
+  .chat-input-row {
+    display: flex;
+    gap: 10px;
+    padding: 14px;
+    border-top: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .chat-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    font-size: 14px;
+  }
+  .chat-input:focus {
+    outline: none;
+    border-color: var(--border-active);
+  }
 </style>
 </head>
 <body>
@@ -794,6 +872,13 @@
       <line x1="5" y1="8" x2="11" y2="8" stroke-linecap="round"/>
     </svg>
     Add COMAT
+  </button>
+  <button class="tab-btn" onclick="switchTab('chat', this)">
+    <svg class="tab-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M2 3h12v7.5H6.5L3 13.5V10.5H2z" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Chat
+    <span class="tab-count" id="chat-count">0</span>
   </button>
 </nav>
 
@@ -983,6 +1068,32 @@
     </div>
   </div>
 
+  <!-- ═══════ PAGE 4: TEAM CHAT ═══════ -->
+  <div class="page" id="page-chat">
+    <div class="page-header">
+      <div>
+        <div class="page-title">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--porter-teal)" stroke-width="1.8">
+            <path d="M3 4h14v9H8l-4 4v-4H3z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Team Chat
+        </div>
+        <div class="page-subtitle">Live messages — YYZ COMAT team</div>
+      </div>
+    </div>
+
+    <div class="chat-card">
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-typing" id="chat-typing-indicator"></div>
+      <div class="chat-input-row">
+        <input type="text" id="chat-input" class="chat-input" placeholder="Message the team..." maxlength="500"
+               oninput="handleChatTyping()"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();sendChatMessage();}">
+        <button class="btn btn-primary" onclick="sendChatMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 </div><!-- end #app -->
@@ -1158,6 +1269,8 @@ function initFirebase() {
           firebaseSyncStarted = true;
           checkFirebaseConnection();
           startComatListener();
+          startChatListener();
+          startChatTypingListener();
         }
       } else {
         firebaseAuthenticated = false;
@@ -1228,6 +1341,179 @@ function startComatListener() {
     console.error('Listener error:', err);
     updateSyncBanner('error', 'Sync error — using local data');
   });
+}
+
+// ════════════════════════════════════════════
+// TEAM CHAT
+// ════════════════════════════════════════════
+let chatListener = null;
+let chatMessagesCache = {};
+
+function startChatListener() {
+  if (!firebaseDb) return;
+
+  const chatRef = window.firebaseRef(firebaseDb, 'chat_messages');
+  chatListener = window.firebaseOnValue(chatRef, (snapshot) => {
+    chatMessagesCache = snapshot.val() || {};
+    renderChat();
+  }, (err) => {
+    console.error('Chat listener error:', err);
+  });
+}
+
+function sendChatMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  if (!currentUser) {
+    alert('You must be logged in to send a message.');
+    return;
+  }
+
+  const key = Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  const message = {
+    sender: currentUser.display,
+    text: text,
+    timestamp: Date.now(),
+  };
+
+  clearTimeout(typingClearTimer);
+  clearMyTypingStatus();
+
+  if (!firebaseDb) {
+    // Local-only fallback if Firebase isn't connected
+    chatMessagesCache[key] = message;
+    renderChat();
+    input.value = '';
+    return;
+  }
+
+  const msgRef = window.firebaseRef(firebaseDb, 'chat_messages/' + key);
+  window.firebaseSet(msgRef, message).catch(err => {
+    console.error('Chat send error:', err);
+    alert('Message failed to send — check your connection.');
+  });
+
+  input.value = '';
+}
+
+function renderChat() {
+  const container = document.getElementById('chat-messages');
+  const countEl = document.getElementById('chat-count');
+  if (!container) return;
+
+  const messages = Object.values(chatMessagesCache).sort((a, b) => a.timestamp - b.timestamp);
+
+  if (countEl) countEl.textContent = messages.length;
+
+  if (!messages.length) {
+    container.innerHTML = '<div class="chat-empty">No messages yet — say hello.</div>';
+    return;
+  }
+
+  const wasScrolledToBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 40;
+
+  container.innerHTML = messages.map(m => {
+    const isOwn = currentUser && m.sender === currentUser.display;
+    const time = new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const escaped = String(m.text || '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `
+      <div class="chat-msg ${isOwn ? 'own' : ''}">
+        <div class="chat-msg-meta">${escapeHtml(m.sender)} · ${time}</div>
+        <div class="chat-msg-text">${escaped}</div>
+      </div>`;
+  }).join('');
+
+  if (wasScrolledToBottom) {
+    container.scrollTop = container.scrollHeight;
+  }
+}
+
+function escapeHtml(str) {
+  return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ── Typing indicator ──────────────────────────────────────
+function sanitizeFirebaseKey(str) {
+  return String(str || '').replace(/[.#$\[\]\/]/g, '_');
+}
+
+let typingClearTimer = null;
+let lastTypingWriteAt = 0;
+let typingCache = {};
+const TYPING_TTL_MS = 4000; // how long a typing flag is considered "fresh"
+
+function handleChatTyping() {
+  if (!currentUser) return;
+  const now = Date.now();
+
+  // Throttle writes so we're not hitting Firebase on every keystroke
+  if (now - lastTypingWriteAt > 1200) {
+    lastTypingWriteAt = now;
+    setMyTypingStatus(now);
+  }
+
+  clearTimeout(typingClearTimer);
+  typingClearTimer = setTimeout(clearMyTypingStatus, 2500); // auto-clear after a pause
+}
+
+function setMyTypingStatus(ts) {
+  if (!currentUser) return;
+  const key = sanitizeFirebaseKey(currentUser.display);
+  if (!firebaseDb) {
+    typingCache[key] = { name: currentUser.display, ts };
+    renderTypingIndicator();
+    return;
+  }
+  const typingRef = window.firebaseRef(firebaseDb, 'chat_typing/' + key);
+  window.firebaseSet(typingRef, { name: currentUser.display, ts }).catch(() => {});
+}
+
+function clearMyTypingStatus() {
+  if (!currentUser) return;
+  const key = sanitizeFirebaseKey(currentUser.display);
+  if (!firebaseDb) {
+    delete typingCache[key];
+    renderTypingIndicator();
+    return;
+  }
+  const typingRef = window.firebaseRef(firebaseDb, 'chat_typing/' + key);
+  window.firebaseSet(typingRef, null).catch(() => {});
+}
+
+function startChatTypingListener() {
+  if (!firebaseDb) return;
+  const typingRef = window.firebaseRef(firebaseDb, 'chat_typing');
+  window.firebaseOnValue(typingRef, (snapshot) => {
+    typingCache = snapshot.val() || {};
+    renderTypingIndicator();
+  });
+  // Re-check every second so stale entries (e.g. someone closed the tab
+  // mid-type) fade out client-side even without a new Firebase event
+  setInterval(renderTypingIndicator, 1000);
+}
+
+function renderTypingIndicator() {
+  const el = document.getElementById('chat-typing-indicator');
+  if (!el) return;
+
+  const now = Date.now();
+  const names = Object.values(typingCache)
+    .filter(t => t && t.ts && now - t.ts < TYPING_TTL_MS)
+    .filter(t => !currentUser || t.name !== currentUser.display)
+    .map(t => t.name);
+
+  if (!names.length) {
+    el.textContent = '';
+  } else if (names.length === 1) {
+    el.textContent = `${names[0]} is typing...`;
+  } else if (names.length === 2) {
+    el.textContent = `${names[0]} and ${names[1]} are typing...`;
+  } else {
+    el.textContent = `Several people are typing...`;
+  }
 }
 
 // SYNC BANNER FUNCTIONS
@@ -1402,6 +1688,13 @@ function switchTab(name, btn) {
   document.getElementById('page-' + name).classList.add('active');
   if (name === 'comat')  renderComat();
   if (name === 'manage') updateFlightDropdown();
+  if (name === 'chat') {
+    renderChat();
+    const container = document.getElementById('chat-messages');
+    if (container) container.scrollTop = container.scrollHeight;
+    const input = document.getElementById('chat-input');
+    if (input) input.focus();
+  }
 }
 
 let currentSubTab = 'all';
