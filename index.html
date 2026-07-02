@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Porter Airlines — YYZ COMAT</title>
+<title>Porter Airlines — COMAT</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -66,75 +66,6 @@
     --text-muted: #555e72;
     --font-ui: 'Sora', sans-serif;
     --font-mono: 'DM Mono', monospace;
-  }
-
-  body.keith-theme {
-    --porter-navy: #163a28;
-    --porter-deep: #0f2416;
-    --porter-teal: #70b87f;
-    --porter-textcolor1: #a5c69b;
-    --porter-teal-dim: rgba(112,184,127,0.15);
-    --porter-teal-border: rgba(112,184,127,0.35);g
-    --porter-gold: #d4b76e;
-    --porter-red: #b35a42;
-    --porter-green: #8cc38c;
-    --text-primary: #e8f3de;
-    --text-secondary: #b7cfac;
-    --text-muted: #9bb199;
-    --surface: #18311f;
-    --surface2: #203d2b;
-    --surface3: #284631;
-    --border: rgba(165,214,178,0.15);
-    --border-active: rgba(112,184,127,0.5);
-  }
-
-  body.jamail-theme{
-    --porter-navy: #131313;
-    --porter-deep: #000000;
-    --porter-teal: #ffffff;
-    --porter-textcolor1: #ffffff;
-    --porter-teal-dim: rgba(165, 165, 165, 0.15);
-    --porter-teal-border: rgba(165, 165, 165, 0.35);
-    --porter-gold: #d4b76e;
-    --porter-red: #ac4141;
-    --porter-green: #317737;
-    --text-primary: #f5f5f5;
-    --text-secondary: #ebebeb;
-    --text-muted: #afafaf;
-    --surface: #313131;
-    --surface2: #3b3b3b;
-    --surface3: #333333;
-    --border: rgba(167, 167, 167, 0.15);
-    --border-active: rgba(167, 167, 167, 0.5);
-  }
-
-  /* ── JAMAIL VIDEO BACKGROUND ── */
-  #jamail-videobg {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    overflow: hidden;
-  }
-
-  body.jamail-theme #jamail-videobg {
-    display: block;
-  }
-
-  #jamail-videobg video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    opacity: 0.75;
-    filter: brightness(0.7) saturate(1.2);
-  }
-
-  /* Ensure all content sits above the video */
-  #login-screen,
-  #app {
-    position: relative;
-    z-index: 1;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -374,10 +305,6 @@
   }
 
   .user-badge:hover { border-color: var(--porter-red); color: var(--porter-red); }
-  .user-badge.keith { border-color: var(--forest-green-border); background: var(--forest-green-dim); color: var(--forest-green-light); }
-  .user-badge.keith:hover { border-color: var(--forest-green); color: var(--forest-green); }
-  .user-avatar.jamail { border-color: var(--porter-gold); background: var(--porter-gold); color: var(--porter-navy); }
-  .user-avatar.jamail:hover { border-color: var(--porter-gold); color: var(--porter-navy); } 
   .user-avatar {
     width: 22px; height: 22px;
     background: var(--porter-teal-dim);
@@ -385,8 +312,6 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 10px; color: var(--porter-teal); font-weight: 600;
   }
-  .user-avatar.keith { background: var(--forest-green); color: #f0fcf0; }
-  .user-avatar.jamail { background: var(--porter-gold); color: #f0fcf0; }
 
   /* ── NAV TABS ── */
   .nav-tabs {
@@ -759,11 +684,6 @@
 </div>
 <div class="tv-cycle-label" id="tv-cycle-label"></div>
 
-<!-- JAMAIL VIDEO BACKGROUND — add your video at /assets/jamail-bg.mp4 in your repo -->
-<div id="jamail-videobg" aria-hidden="true">
-  <video autoplay muted loop playsinline src="/assets/jamail-bg.mp4"></video>
-</div>
-
 <!-- ══════════════════════════════════════════════════
      LOGIN SCREEN
 ══════════════════════════════════════════════════ -->
@@ -779,13 +699,13 @@
     </div>
 
     <div class="login-title">Sign In</div>
-    <div class="login-subtitle">YYZ Station — COMAT Management System</div>
+    <div class="login-subtitle">COMAT Management System</div>
 
     <div class="login-error" id="login-error">Incorrect username or password.</div>
 
     <div class="login-field">
       <label class="login-label">Username</label>
-      <input class="login-input" type="text" id="login-username" placeholder="e.g. Keith Acker" autocomplete="username" onkeydown="loginKeydown(event)">
+      <input class="login-input" type="text" id="login-username" placeholder="Enter your username" autocomplete="username" onkeydown="loginKeydown(event)">
     </div>
     <div class="login-field">
       <label class="login-label">Password</label>
@@ -802,7 +722,7 @@
     </button>
 
     <div class="login-footer">
-      Porter Airlines Technical Operations &nbsp;|&nbsp;|&nbsp; YYZ Station<br>
+      Porter Airlines Technical Operations &nbsp;|&nbsp;|&nbsp; COMAT Management System<br>
       <span style="color:var(--text-muted); font-size:10px;">Application is not intended to be distributed. Contains legal and/or privileged information.</span>
     </div>
   </div>
@@ -822,7 +742,7 @@
   <div class="header-right">
     <div class="station-badge">
       <span class="dot"></span>
-      YYZ — Toronto Pearson Intl Airport
+      <span id="station-badge-text">— — Select Station</span>
     </div>
     <div class="refresh-badge" onclick="manualRefresh()" title="Click to refresh now">
       <span class="refresh-dot"></span>
@@ -889,8 +809,8 @@
 
     <div class="page-header">
       <div>
-        <div class="page-title">STORES — YYZ</div>
-        <div class="page-subtitle">Porter Airlines departures and arrivals @ Toronto Pearson
+        <div class="page-title" id="flights-page-title">STORES</div>
+        <div class="page-subtitle"><span id="flights-page-subtitle">Porter Airlines departures and arrivals</span>
           <span id="live-badge" style="display:none;" class="live-indicator" style="margin-left:8px;">
             &nbsp;<span class="live-dot"></span> LIVE
           </span>
@@ -955,7 +875,7 @@
           </svg>
           COMAT Dashboard
         </div>
-        <div class="page-subtitle">Company material movements — YYZ station</div>
+        <div class="page-subtitle" id="comat-page-subtitle">Company material movements</div>
       </div>
       <div class="filter-row">
         <input type="text" class="search-input" placeholder="Search order#, part, flight..." id="comat-search" oninput="renderComat()">
@@ -1007,7 +927,7 @@
           </svg>
           Add COMAT to Flight
         </div>
-        <div class="page-subtitle">Attach company material to a Porter flight departing or arriving YYZ</div>
+        <div class="page-subtitle" id="manage-page-subtitle">Attach company material to a Porter flight departing or arriving your station</div>
       </div>
     </div>
 
@@ -1078,7 +998,7 @@
           </svg>
           Team Chat
         </div>
-        <div class="page-subtitle">Live messages — YYZ COMAT team</div>
+        <div class="page-subtitle" id="chat-page-subtitle">Live messages — COMAT team</div>
       </div>
     </div>
 
@@ -1136,33 +1056,69 @@
 <div class="toast-container" id="toast-container"></div>
 
 <script>
+// STATION CONFIG
+const STATIONS = {
+  YYZ: { code: 'YYZ', name: 'Toronto Pearson Intl Airport', city: 'Toronto' },
+  YTZ: { code: 'YTZ', name: 'Billy Bishop Toronto City Airport', city: 'Toronto' },
+  YHZ: { code: 'YHZ', name: 'Halifax Stanfield Intl Airport', city: 'Halifax' },
+  YOW: { code: 'YOW', name: 'Ottawa Macdonald-Cartier Intl Airport', city: 'Ottawa' },
+};
+
 // USER ACCOUNTS
 const USERS = [
-  { username: 'admin',    password: 'Port1!',  display: 'Admin',       role: 'Admin' },
-  { username: 'aaron.o', password: 'PORTER1$', display: 'AARON OSIT', role: 'AMH'},
-  { username: 'yuanyi.kao@flyporter.com', password: 'Port1!', display: 'NATHAN KAO', role: 'AMH' },
-  { username: 'techops',  password: 'techops1',   display: 'Tech Ops',    role: 'Tech Ops' },
-  { username: 'fred_a',  password: 'MONKE@1',   display: 'FRED ABELLERA',    role: 'AMH' },
-  { username: 'tvdisplay', password: 'tvdisplay',   display: 'TV Display',  role: 'Display' },
-  { username: 'wardaddy',  password: 'daddy',   display: 'KEITH ACKER',    role: 'DADDY' },
-  { username: 'blackhawkdown', password: 'kfc', display: 'JAMAIL JORDAN', role: 'AMH' },
+  { username: 'admin',    password: 'Port1!',  display: 'Admin',       role: 'Admin', station: 'YYZ' },
+  { username: 'aaron.o', password: 'PORTER1$', display: 'AARON OSIT', role: 'AMH', station: 'YYZ'},
+  { username: 'yuanyi.kao@flyporter.com', password: 'Port1!', display: 'NATHAN KAO', role: 'AMH', station: 'YYZ' },
+  { username: 'techops',  password: 'techops1',   display: 'Tech Ops',    role: 'Tech Ops', station: 'YYZ' },
+  { username: 'fred_a',  password: 'MONKE@1',   display: 'FRED ABELLERA',    role: 'AMH', station: 'YYZ' },
+  { username: 'tvdisplay', password: 'tvdisplay',   display: 'TV Display',  role: 'Display', station: 'YYZ' },
+  { username: 'wardaddy',  password: 'daddy',   display: 'KEITH ACKER',    role: 'AMH', station: 'YYZ' },
+  { username: 'blackhawkdown', password: 'kfc', display: 'JAMAIL JORDAN', role: 'AMH', station: 'YYZ' },
 ];
 
 // LOGIN
 let currentUser = null;
+let currentStation = 'YYZ';
 
-function setUserBadgeStyle(user) {
-  const badge = document.querySelector('.user-badge');
-  const avatar = document.getElementById('user-avatar');
-  if (!badge || !avatar) return;
-  const isKeith = user && user.display && user.display.toUpperCase() === 'KEITH ACKER';
-  badge.classList.toggle('keith', isKeith);
-  avatar.classList.toggle('keith', isKeith);
-  document.body.classList.toggle('keith-theme', isKeith);
-  const isJamail = user && user.display && user.display.toUpperCase() === 'JAMAIL JORDAN';
-  badge.classList.toggle('jamail', isJamail);
-  avatar.classList.toggle('jamail', isJamail);
-  document.body.classList.toggle('jamail-theme', isJamail);
+function applyStationBranding(stationCode) {
+  const st = STATIONS[stationCode] || STATIONS.YYZ;
+  currentStation = st.code;
+
+  document.title = `Porter Airlines — ${st.code} COMAT`;
+
+  const badgeText = document.getElementById('station-badge-text');
+  if (badgeText) badgeText.textContent = `${st.code} — ${st.name}`;
+
+  const flightsTitle = document.getElementById('flights-page-title');
+  if (flightsTitle) flightsTitle.textContent = `STORES — ${st.code}`;
+
+  const flightsSub = document.getElementById('flights-page-subtitle');
+  if (flightsSub) flightsSub.textContent = `Porter Airlines departures and arrivals @ ${st.city}`;
+
+  const comatSub = document.getElementById('comat-page-subtitle');
+  if (comatSub) comatSub.textContent = `Company material movements — ${st.code} station`;
+
+  const manageSub = document.getElementById('manage-page-subtitle');
+  if (manageSub) manageSub.textContent = `Attach company material to a Porter flight departing or arriving ${st.code}`;
+
+  const chatSub = document.getElementById('chat-page-subtitle');
+  if (chatSub) chatSub.textContent = `Live messages — ${st.code} COMAT team`;
+}
+
+// Does this flight row belong on the current station's dashboard?
+// Live sheet data carries an explicit `station` field (one row per station a
+// flight touches). Fallback sample data has no `station` field, so we fall
+// back to matching origin/dest directly.
+function belongsToStation(f) {
+  if (f.station) return f.station === currentStation;
+  return f.origin === currentStation || f.dest === currentStation;
+}
+
+// Is this flight inbound (arriving) to the current station?
+// Live sheet data carries an explicit `direction` field relative to `station`.
+function isFlightInbound(f) {
+  if (f.direction) return f.direction === 'ARRIVAL';
+  return f.origin !== currentStation;
 }
 
 function doLogin() {
@@ -1179,11 +1135,11 @@ function doLogin() {
 
   errEl.classList.remove('show');
   currentUser = user;
-  localStorage.setItem('porter_session', JSON.stringify({ username: user.username, display: user.display, role: user.role }));
+  localStorage.setItem('porter_session', JSON.stringify({ username: user.username, display: user.display, role: user.role, station: user.station }));
 
   document.getElementById('user-display').textContent = user.display;
   document.getElementById('user-avatar').textContent = user.display.charAt(0).toUpperCase();
-  setUserBadgeStyle(user);
+  applyStationBranding(user.station);
 
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app').style.display = 'block';
@@ -1204,7 +1160,6 @@ function doLogout() {
   stopTvCycle();
   localStorage.removeItem('porter_session');
   currentUser = null;
-  setUserBadgeStyle(null);
   if (firebaseAuth && window.firebaseSignOut) {
     window.firebaseSignOut(firebaseAuth).catch(() => {});
   }
@@ -1223,7 +1178,7 @@ function checkSession() {
     currentUser = user;
     document.getElementById('user-display').textContent = user.display;
     document.getElementById('user-avatar').textContent = user.display.charAt(0).toUpperCase();
-    setUserBadgeStyle(user);
+    applyStationBranding(user.station);
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('app').style.display = 'block';
     initApp();
@@ -1712,7 +1667,7 @@ function switchSubTab(name, btn) {
 
 // RENDER: FLIGHTS
 function renderFlights() {
-  const flights = getFlights();
+  const flights = getFlights().filter(belongsToStation);
   const comat   = getComat();
   const search  = document.getElementById('flight-search').value.toLowerCase();
   const filter  = document.getElementById('flight-status-filter').value;
@@ -1721,7 +1676,7 @@ function renderFlights() {
   const ONE_HOUR = 60 * 60 * 1000;
 
   const enhancedFlights = flights.map(f => {
-    const isInbound = f.origin !== 'YYZ';
+    const isInbound = isFlightInbound(f);
     return {
       ...f,
       isInbound,
@@ -1846,8 +1801,10 @@ function flightRowClick(id) {
 let selectedComatId = null;
 
 function renderComat() {
-  const comat   = getComat();
-  const flights = getFlights();
+  const allFlights = getFlights();
+  const flights = allFlights.filter(belongsToStation);
+  const stationFlightIds = new Set(flights.map(f => f.id));
+  const comat   = getComat().filter(c => stationFlightIds.has(c.flightId));
   const search  = (document.getElementById('comat-search').value || '').toLowerCase();
 
   const active    = comat.filter(c => c.status !== 'completed');
@@ -2024,12 +1981,12 @@ function removeComat(id) {
 
 // ADD COMAT FORM
 function updateFlightDropdown() {
-  const flights = getFlights();
+  const flights = getFlights().filter(belongsToStation);
   const sel = document.getElementById('form-flight');
   const cur = sel.value;
   sel.innerHTML = '<option value="">— Choose a flight —</option>' +
     flights.map(f => {
-      const dir = f.origin === 'YYZ' ? 'OUT' : 'IN';
+      const dir = isFlightInbound(f) ? 'IN' : 'OUT';
       const time = new Date(f.std).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
       return `<option value="${f.id}">[${dir}] ${f.flight} — ${f.origin}→${f.dest} @ ${time}</option>`;
     }).join('');
@@ -2052,7 +2009,7 @@ function addComat() {
   // Determine direction from selected flight
   const flights = getFlights();
   const flight = flights.find(f => f.id === flightId);
-  const direction = (flight && flight.origin === 'YYZ') ? 'OUTBOUND' : 'INBOUND';
+  const direction = (flight && !isFlightInbound(flight)) ? 'OUTBOUND' : 'INBOUND';
 
   const record = {
     id:          'COM-' + Date.now(),
