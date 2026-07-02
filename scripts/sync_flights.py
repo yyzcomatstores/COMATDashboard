@@ -1,8 +1,9 @@
 """
-Porter YYZ Flight Sync
+Porter Multi-Station Flight Sync
 Fetches live flight data from radar.flyporter.com and writes it to a Google Sheet.
-Filters to flights touching YYZ only, picks the gate/status/time relevant to YYZ
-depending on whether the flight is arriving or departing there.
+Filters to flights touching one of our home stations, and — for any flight that
+touches more than one of them (e.g. YYZ<->YOW) — writes one row PER station,
+each carrying the gate/status/time relevant to that station's side of the leg.
 Run manually or via GitHub Actions on a schedule.
 """
 
@@ -15,10 +16,13 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # ── CONFIG ──────────────────────────────────────────────────────────────────
-PORTER_URL    = "https://radar.flyporter.com/flightinformation/get?nocache=true"
-SHEET_ID      = os.environ["GOOGLE_SHEET_ID"]       # set in GitHub Actions secrets
-SHEET_TAB     = "Flights"                            # tab name inside the spreadsheet
-HOME_AIRPORT  = "YYZ"
+PORTER_URL     = "https://radar.flyporter.com/flightinformation/get?nocache=true"
+SHEET_ID       = os.environ["GOOGLE_SHEET_ID"]       # set in GitHub Actions secrets
+SHEET_TAB      = "Flights"                            # tab name inside the spreadsheet
+
+# All stations that get their own dashboard login. Add/remove airport codes here
+# to change which stations are tracked — no other code changes needed.
+HOME_AIRPORTS = ["YYZ", "YTZ", "YHZ", "YOW"]
 
 # How many days around "today" to keep (the feed spans multiple days of history/future).
 # 0 = today only. 1 = today +/- 1 day. Adjust to taste.
@@ -33,8 +37,9 @@ HEADERS = [
     "Flight",
     "Origin",
     "Destination",
-    "Direction",          # ARRIVAL or DEPARTURE (relative to YYZ)
-    "Scheduled Time",      # local time, YYZ-relevant leg
+    "Station",             # which home station this row is written for
+    "Direction",            # ARRIVAL or DEPARTURE, relative to Station
+    "Scheduled Time",       # local time, Station-relevant leg
     "Estimated Time",
     "Status",
     "Gate",
@@ -63,7 +68,12 @@ def get_sheet():
 
 # ── FETCH ────────────────────────────────────────────────────────────────────
 def fetch_flights():
-    """Fetch XML from Porter's radar endpoint and parse into a list of row dicts."""
+    """Fetch XML from Porter's radar endpoint and parse into a list of row dicts.
+
+    A flight that touches two of our home stations (e.g. YYZ -> YOW) produces
+    TWO rows — one for each station — so each station's dashboard shows the
+    gate/status/time that's relevant to it.
+    """
     resp = requests.get(PORTER_URL, timeout=20)
     resp.raise_for_status()
 
@@ -91,8 +101,9 @@ def fetch_flights():
         origin = get("departureAirportCode")
         dest   = get("destinationAirportCode")
 
-        if origin != HOME_AIRPORT and dest != HOME_AIRPORT:
-            continue  # doesn't touch YYZ at all — skip
+        touched_stations = [s for s in HOME_AIRPORTS if s in (origin, dest)]
+        if not touched_stations:
+            continue  # doesn't touch any of our stations — skip
 
         flight_num = get("flightNumber").replace(" ", "")
         tail       = get("tailNumber")
@@ -101,37 +112,39 @@ def fetch_flights():
         codeshare_el = item.find("codeshare/codeshareFlightNumber")
         codeshare = codeshare_el.text.strip() if codeshare_el is not None and codeshare_el.text else "-"
 
-        if dest == HOME_AIRPORT:
-            # This leg is an arrival INTO YYZ — use destination-side fields
-            direction  = "ARRIVAL"
-            gate       = get("destinationGate")
-            status     = get("arrivalStatus")
-            scheduled  = get("scheduledArrivalTime")
-            estimated  = get("estimatedArrivalTime")
-        else:
-            # This leg is a departure FROM YYZ — use departure-side fields
-            direction  = "DEPARTURE"
-            gate       = get("departureGate")
-            status     = get("departureStatus")
-            scheduled  = get("scheduledDepartureTime")
-            estimated  = get("estimatedDepartureTime")
+        for station in touched_stations:
+            if dest == station:
+                # This leg is an arrival INTO this station — use destination-side fields
+                direction  = "ARRIVAL"
+                gate       = get("destinationGate")
+                status     = get("arrivalStatus")
+                scheduled  = get("scheduledArrivalTime")
+                estimated  = get("estimatedArrivalTime")
+            else:
+                # This leg is a departure FROM this station — use departure-side fields
+                direction  = "DEPARTURE"
+                gate       = get("departureGate")
+                status     = get("departureStatus")
+                scheduled  = get("scheduledDepartureTime")
+                estimated  = get("estimatedDepartureTime")
 
-        rows.append([
-            flight_num,
-            origin,
-            dest,
-            direction,
-            scheduled,
-            estimated,
-            status,
-            gate,
-            tail,
-            codeshare,
-            now_utc_str,
-        ])
+            rows.append([
+                flight_num,
+                origin,
+                dest,
+                station,
+                direction,
+                scheduled,
+                estimated,
+                status,
+                gate,
+                tail,
+                codeshare,
+                now_utc_str,
+            ])
 
     # Sort by scheduled time so the sheet reads top-to-bottom chronologically
-    rows.sort(key=lambda r: r[4])
+    rows.sort(key=lambda r: r[5])
 
     return rows
 
@@ -143,20 +156,24 @@ def write_to_sheet(sheet, rows):
     sheet.clear()
     sheet.update(values=all_data, range_name="A1")  # keyword args avoid the deprecation warning
 
-    sheet.format("A1:K1", {
+    sheet.format("A1:L1", {
         "textFormat": {"bold": True},
         "backgroundColor": {"red": 0.2, "green": 0.2, "blue": 0.2},
     })
-    print(f"Wrote {len(rows)} YYZ flights to sheet '{SHEET_TAB}' at {datetime.now(timezone.utc).strftime('%H:%M UTC')}")
+    per_station = {}
+    for r in rows:
+        per_station[r[3]] = per_station.get(r[3], 0) + 1
+    summary = ", ".join(f"{k}:{v}" for k, v in sorted(per_station.items()))
+    print(f"Wrote {len(rows)} rows ({summary}) to sheet '{SHEET_TAB}' at {datetime.now(timezone.utc).strftime('%H:%M UTC')}")
 
 
 # ── MAIN ─────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print("Fetching Porter flight data...")
+    print(f"Fetching Porter flight data for stations: {', '.join(HOME_AIRPORTS)}...")
     try:
         rows = fetch_flights()
         if not rows:
-            print("No YYZ flights found in the current date window — check DATE_WINDOW_DAYS or HOME_AIRPORT")
+            print("No flights found in the current date window — check DATE_WINDOW_DAYS or HOME_AIRPORTS")
         else:
             sheet = get_sheet()
             write_to_sheet(sheet, rows)
