@@ -79,7 +79,7 @@
   }
 
   /* LOGIN SCREEN */
-  #login-screen {
+  #login-screen, #profile-screen {
     position: fixed;
     inset: 0;
     background: var(--porter-deep);
@@ -90,7 +90,7 @@
     animation: fadeIn 0.4s ease;
   }
 
-  #login-screen.hidden { display: none; }
+  #login-screen.hidden, #profile-screen.hidden { display: none; }
 
   .login-bg {
     position: absolute;
@@ -224,6 +224,80 @@
     color: var(--text-muted);
     text-align: center;
   }
+
+  /* PROFILE SELECT SCREEN */
+  .profile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    max-height: 320px;
+    overflow-y: auto;
+    margin-bottom: 1.2rem;
+  }
+
+  .profile-tile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .profile-tile:hover { border-color: var(--porter-teal-border); background: var(--porter-teal-dim); }
+
+  .profile-tile-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--porter-teal-dim);
+    color: var(--porter-teal);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .profile-tile-name {
+    font-size: 13px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .profile-tile.add-new {
+    border-style: dashed;
+    color: var(--text-secondary);
+  }
+  .profile-tile.add-new:hover { color: var(--porter-teal); border-color: var(--porter-teal-border); }
+  .profile-tile.add-new .profile-tile-avatar { background: transparent; border: 1px dashed var(--border-active); font-size: 16px; }
+
+  .profile-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 12px;
+    padding: 18px 8px;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+  }
+
+  .profile-back-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: 9px;
+    font-family: var(--font-ui);
+    font-size: 13px;
+    padding: 11px;
+    cursor: pointer;
+    margin-top: 4px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .profile-back-btn:hover { border-color: var(--porter-red); color: var(--porter-red); }
 
   /* ── HEADER ── */
   header {
@@ -729,6 +803,40 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════
+     PROFILE SELECT / CREATE SCREEN
+══════════════════════════════════════════════════ -->
+<div id="profile-screen" class="hidden">
+  <div class="login-bg"></div>
+  <div class="login-card" style="max-width:460px;">
+    <div class="login-logo">
+      <div class="login-logo-mark">PD</div>
+      <div>
+        <div class="login-logo-text">Porter Airlines Canada Limited</div>
+        <div class="login-logo-sub" id="profile-station-sub">Technical Operations · Stores</div>
+      </div>
+    </div>
+
+    <div class="login-title">Who's working?</div>
+    <div class="login-subtitle">Select your profile, or create a new one for this station.</div>
+
+    <div class="profile-grid" id="profile-grid"></div>
+
+    <div id="profile-add-form" style="display:none;">
+      <div class="login-field">
+        <label class="login-label">Full Name</label>
+        <input class="login-input" type="text" id="new-profile-name" placeholder="e.g. Jane Smith" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmAddProfile();}">
+      </div>
+      <div style="display:flex; gap:10px; margin-bottom:1rem;">
+        <button class="btn btn-ghost" style="flex:1;" onclick="cancelAddProfile()">Cancel</button>
+        <button class="btn btn-primary" style="flex:1; justify-content:center;" onclick="confirmAddProfile()">Create Profile</button>
+      </div>
+    </div>
+
+    <button class="profile-back-btn" onclick="backToLogin()">← Use a different login</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
      MAIN APP (hidden until login)
 ══════════════════════════════════════════════════ -->
 <div id="app" style="display:none">
@@ -1065,19 +1173,17 @@ const STATIONS = {
 };
 
 // USER ACCOUNTS
+// Station accounts (requiresProfile: true) are shared logins — after signing in,
+// staff pick or create their own profile from the roster stored for that station.
+// Utility accounts (admin/techops/tvdisplay) skip profile selection.
 const USERS = [
-  { username: 'admin',    password: 'Port1!',  display: 'Admin',       role: 'Admin', station: 'YYZ' },
-  { username: 'aaron.o', password: 'PORTER1$', display: 'AARON OSIT', role: 'AMH', station: 'YYZ'},
-  { username: 'yuanyi.kao@flyporter.com', password: 'Port1!', display: 'NATHAN KAO', role: 'AMH', station: 'YYZ' },
-  { username: 'yyz.stores', password: 'Port1!', display: 'YYZ AMH', role: 'AMH', station: 'YYZ' },
-  { username: 'ytz.stores', password: 'MrPorter1!', display: 'YTZ AMH', role: 'AMH', station: 'YTZ' },
-  { username: 'yow.stores', password: 'OTTAWA1!', display: 'YOW AMH', role: 'AMH', station: 'YOW' },
-  { username: 'yhz.stores', password: 'HALIFAX@1', display: 'YHZ AMH', role: 'AMH', station: 'YHZ' },
-  { username: 'techops',  password: 'techops1',   display: 'Tech Ops',    role: 'Tech Ops', station: 'YYZ' },
-  { username: 'fred_a',  password: 'MONKE@1',   display: 'FRED ABELLERA',    role: 'AMH', station: 'YYZ' },
-  { username: 'tvdisplay', password: 'tvdisplay',   display: 'TV Display',  role: 'Display', station: 'YYZ' },
-  { username: 'wardaddy',  password: 'daddy',   display: 'KEITH ACKER',    role: 'AMH', station: 'YYZ' },
-  { username: 'blackhawkdown', password: 'kfc', display: 'JAMAIL JORDAN', role: 'AMH', station: 'YYZ' },
+  { username: 'yyz.stores', password: 'Stores2024!', station: 'YYZ', role: 'Stores', requiresProfile: true },
+  { username: 'ytz.stores', password: 'Stores2024!', station: 'YTZ', role: 'Stores', requiresProfile: true },
+  { username: 'yhz.stores', password: 'Stores2024!', station: 'YHZ', role: 'Stores', requiresProfile: true },
+  { username: 'yow.stores', password: 'Stores2024!', station: 'YOW', role: 'Stores', requiresProfile: true },
+  { username: 'admin',     password: 'Port1!',    display: 'Admin',      role: 'Admin',    station: 'YYZ' },
+  { username: 'techops',   password: 'techops1',  display: 'Tech Ops',   role: 'Tech Ops', station: 'YYZ' },
+  { username: 'tvdisplay', password: 'tvdisplay', display: 'TV Display', role: 'Display',  station: 'YYZ' },
 ];
 
 // LOGIN
@@ -1138,20 +1244,11 @@ function doLogin() {
   }
 
   errEl.classList.remove('show');
-  currentUser = user;
-  localStorage.setItem('porter_session', JSON.stringify({ username: user.username, display: user.display, role: user.role, station: user.station }));
 
-  document.getElementById('user-display').textContent = user.display;
-  document.getElementById('user-avatar').textContent = user.display.charAt(0).toUpperCase();
-  applyStationBranding(user.station);
-
-  document.getElementById('login-screen').classList.add('hidden');
-  document.getElementById('app').style.display = 'block';
-
-  initApp();
-  showToast(`Welcome, ${user.display}`, 'success');
-  if (user.role === 'Display') {
-    setTimeout(startTvCycle, 800);
+  if (user.requiresProfile) {
+    showProfileScreen(user);
+  } else {
+    completeLogin(user, null);
   }
 }
 
@@ -1159,14 +1256,45 @@ function loginKeydown(e) {
   if (e.key === 'Enter') doLogin();
 }
 
+function completeLogin(user, profile) {
+  currentUser = Object.assign({}, user, {
+    display: profile ? profile.name : (user.display || user.username),
+    profileId: profile ? profile.id : null,
+  });
+
+  localStorage.setItem('porter_session', JSON.stringify({
+    username: user.username,
+    role: user.role,
+    station: user.station,
+    display: currentUser.display,
+    profileId: currentUser.profileId,
+  }));
+
+  document.getElementById('user-display').textContent = currentUser.display;
+  document.getElementById('user-avatar').textContent = (currentUser.display || '?').charAt(0).toUpperCase();
+  applyStationBranding(user.station);
+
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('profile-screen').classList.add('hidden');
+  document.getElementById('app').style.display = 'block';
+
+  initApp();
+  showToast(`Welcome, ${currentUser.display}`, 'success');
+  if (user.role === 'Display') {
+    setTimeout(startTvCycle, 800);
+  }
+}
+
 function doLogout() {
   if (!confirm('Sign out?')) return;
   stopTvCycle();
   localStorage.removeItem('porter_session');
   currentUser = null;
+  pendingStationUser = null;
   if (firebaseAuth && window.firebaseSignOut) {
     window.firebaseSignOut(firebaseAuth).catch(() => {});
   }
+  document.getElementById('profile-screen').classList.add('hidden');
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-username').value = '';
@@ -1179,9 +1307,14 @@ function checkSession() {
     if (!s) return;
     const user = USERS.find(x => x.username === s.username);
     if (!user) return;
-    currentUser = user;
-    document.getElementById('user-display').textContent = user.display;
-    document.getElementById('user-avatar').textContent = user.display.charAt(0).toUpperCase();
+    if (user.requiresProfile && !s.profileId) return; // profile was never chosen — start fresh
+
+    currentUser = Object.assign({}, user, {
+      display: s.display || user.display || user.username,
+      profileId: s.profileId || null,
+    });
+    document.getElementById('user-display').textContent = currentUser.display;
+    document.getElementById('user-avatar').textContent = (currentUser.display || '?').charAt(0).toUpperCase();
     applyStationBranding(user.station);
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('app').style.display = 'block';
@@ -1190,6 +1323,144 @@ function checkSession() {
       setTimeout(startTvCycle, 800);
     }
   } catch(e) {}
+}
+
+// ════════════════════════════════════════════
+// PROFILE SELECT / CREATE (per-station roster)
+// ════════════════════════════════════════════
+let pendingStationUser = null;
+let profilesCache = {};
+let profileListenerStation = null;
+
+function showProfileScreen(user) {
+  pendingStationUser = user;
+  applyStationBranding(user.station);
+
+  const sub = document.getElementById('profile-station-sub');
+  if (sub) sub.textContent = `${user.station} Stores — Technical Operations`;
+
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('profile-screen').classList.remove('hidden');
+
+  cancelAddProfile();
+
+  // Show cached profiles instantly (if any), then refresh live from Firebase.
+  try {
+    profilesCache[user.station] = JSON.parse(localStorage.getItem('porter_profiles_' + user.station)) || profilesCache[user.station] || [];
+  } catch(e) {}
+  renderProfileGrid();
+
+  initFirebase();
+  startProfileListener(user.station);
+}
+
+function backToLogin() {
+  pendingStationUser = null;
+  document.getElementById('profile-screen').classList.add('hidden');
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('login-username').value = '';
+  document.getElementById('login-password').value = '';
+}
+
+function startProfileListener(station) {
+  if (!firebaseDb || !firebaseAuthenticated) {
+    setTimeout(() => startProfileListener(station), 200);
+    return;
+  }
+  if (profileListenerStation === station) return; // already subscribed
+  profileListenerStation = station;
+
+  const profRef = window.firebaseRef(firebaseDb, 'profiles/' + station);
+  window.firebaseOnValue(profRef, (snapshot) => {
+    const val = snapshot.val() || {};
+    const list = Object.keys(val)
+      .map(id => ({ id, ...val[id] }))
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    profilesCache[station] = list;
+    localStorage.setItem('porter_profiles_' + station, JSON.stringify(list));
+    if (pendingStationUser && pendingStationUser.station === station) renderProfileGrid();
+  }, (err) => {
+    console.error('Profile listener error:', err);
+  });
+}
+
+function renderProfileGrid() {
+  if (!pendingStationUser) return;
+  const station = pendingStationUser.station;
+  const list = profilesCache[station] || [];
+  const grid = document.getElementById('profile-grid');
+  if (!grid) return;
+
+  const tiles = list.map(p => `
+    <div class="profile-tile" onclick="selectProfile('${p.id}')">
+      <div class="profile-tile-avatar">${(p.name || '?').charAt(0).toUpperCase()}</div>
+      <div class="profile-tile-name">${p.name}</div>
+    </div>`).join('');
+
+  const addTile = `
+    <div class="profile-tile add-new" onclick="showAddProfileForm()">
+      <div class="profile-tile-avatar">+</div>
+      <div class="profile-tile-name">New Profile</div>
+    </div>`;
+
+  grid.innerHTML = (list.length
+    ? tiles
+    : `<div class="profile-empty">No profiles yet for ${station} — create the first one.</div>`
+  ) + addTile;
+}
+
+function showAddProfileForm() {
+  document.getElementById('profile-grid').style.display = 'none';
+  document.getElementById('profile-add-form').style.display = 'block';
+  const input = document.getElementById('new-profile-name');
+  input.value = '';
+  setTimeout(() => input.focus(), 50);
+}
+
+function cancelAddProfile() {
+  const form = document.getElementById('profile-add-form');
+  const grid = document.getElementById('profile-grid');
+  if (form) form.style.display = 'none';
+  if (grid) grid.style.display = 'grid';
+}
+
+function confirmAddProfile() {
+  const nameInput = document.getElementById('new-profile-name');
+  const name = nameInput.value.trim();
+  if (!name) { showToast('Please enter a name', 'danger'); return; }
+  if (!pendingStationUser) return;
+
+  const station = pendingStationUser.station;
+  const id = 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const profile = { id, name, createdAt: new Date().toISOString() };
+
+  // Optimistic local update so it feels instant, even before Firebase confirms.
+  profilesCache[station] = [...(profilesCache[station] || []), profile]
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  localStorage.setItem('porter_profiles_' + station, JSON.stringify(profilesCache[station]));
+
+  if (firebaseDb) {
+    const profRef = window.firebaseRef(firebaseDb, `profiles/${station}/${id}`);
+    window.firebaseSet(profRef, { name, createdAt: profile.createdAt }).catch(err => {
+      console.error('Failed to save profile to Firebase:', err);
+      showToast('Saved locally — will sync when back online', 'success');
+    });
+  }
+
+  cancelAddProfile();
+  renderProfileGrid();
+  selectProfile(id, profile);
+}
+
+function selectProfile(id, profileMaybe) {
+  if (!pendingStationUser) return;
+  const station = pendingStationUser.station;
+  const list = profilesCache[station] || [];
+  const profile = profileMaybe || list.find(p => p.id === id);
+  if (!profile) return;
+  const user = pendingStationUser;
+  pendingStationUser = null;
+  completeLogin(user, profile);
 }
 
 // DATA LAYER
@@ -1215,9 +1486,12 @@ let firebaseSyncStarted = false;
 let comatListener = null;
 
 // Initialize Firebase
+let firebaseCoreStarted = false;
 function initFirebase() {
+  if (firebaseCoreStarted) return;
   // Firebase is now initialized in the module script above
   if (window.firebaseDb && window.firebaseAuth && window.firebaseSignInAnonymously && window.firebaseOnAuthStateChanged) {
+    firebaseCoreStarted = true;
     firebaseDb = window.firebaseDb;
     firebaseAuth = window.firebaseAuth;
     console.log('Firebase initialized (v9)');
@@ -1243,7 +1517,8 @@ function initFirebase() {
       }
     });
   } else {
-    console.log('Firebase not ready yet');
+    console.log('Firebase not ready yet, retrying...');
+    setTimeout(initFirebase, 150);
   }
 }
 
