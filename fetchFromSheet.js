@@ -2,6 +2,13 @@
 // LIVE FLIGHT LOADER — reads from published Google Sheet CSV
 // Replace SHEET_ID below with your actual Google Sheet ID
 // Column order here must match HEADERS in scripts/sync_flights.py
+//
+// The sheet now holds rows for ALL home stations (YYZ, YTZ, YHZ, YOW).
+// A flight touching two of our stations (e.g. YYZ<->YOW) appears as TWO
+// rows — one per station — each with the gate/status/time relevant to
+// that station. Every flight object carries a `station` field, and the
+// dashboard (index.html) filters to whichever station the logged-in
+// user belongs to.
 // ════════════════════════════════════════════════════════
 
 const SHEET_ID      = "1rJDB_S7xw4Mg-3Z1lYkiV9-oJzUqRmC_kAq_AldWP4c";   // paste your Sheet ID
@@ -14,14 +21,15 @@ const COL = {
   flight:    0,   // "Flight"
   origin:    1,   // "Origin"
   dest:      2,   // "Destination"
-  direction: 3,   // "Direction" (ARRIVAL / DEPARTURE relative to YYZ)
-  scheduled: 4,   // "Scheduled Time"
-  estimated: 5,   // "Estimated Time"
-  status:    6,   // "Status"
-  gate:      7,   // "Gate"
-  tail:      8,   // "Tail Number"
-  codeshare: 9,   // "Codeshare"
-  updated:   10,  // "Last Updated (UTC)"
+  station:   3,   // "Station" (which home station this row belongs to)
+  direction: 4,   // "Direction" (ARRIVAL / DEPARTURE relative to Station)
+  scheduled: 5,   // "Scheduled Time"
+  estimated: 6,   // "Estimated Time"
+  status:    7,   // "Status"
+  gate:      8,   // "Gate"
+  tail:      9,   // "Tail Number"
+  codeshare: 10,  // "Codeshare"
+  updated:   11,  // "Last Updated (UTC)"
 };
 
 // Simple CSV parser (handles quoted fields with commas inside)
@@ -70,20 +78,26 @@ async function fetchLiveFlights() {
       return;
     }
 
-    const flights = dataRows.map(r => ({
-      id:        r[COL.flight],
-      flight:    r[COL.flight],
-      origin:    r[COL.origin],
-      dest:      r[COL.dest],
-      direction: r[COL.direction],
-      std:       toDate(r[COL.scheduled]),
-      etd:       toDate(r[COL.estimated]),
-      status:    r[COL.status]    || "Scheduled",
-      gate:      r[COL.gate]      || "-",
-      tail:      r[COL.tail]      || "-",
-      aircraft:  r[COL.tail]      || "-",   // your table's "Aircraft" column renders f.aircraft — feed has no aircraft type, so show tail number here instead
-      codeshare: r[COL.codeshare] || "-",
-    }));
+    const flights = dataRows.map(r => {
+      const station = r[COL.station] || r[COL.dest]; // fall back for older sheet format
+      return {
+        // Unique per (flight, station) — the same flight number can appear once
+        // per home station it touches, each with that station's own gate/status.
+        id:        `${r[COL.flight]}_${station}`,
+        flight:    r[COL.flight],
+        origin:    r[COL.origin],
+        dest:      r[COL.dest],
+        station:   station,
+        direction: r[COL.direction],  // ARRIVAL / DEPARTURE, relative to `station`
+        std:       toDate(r[COL.scheduled]),
+        etd:       toDate(r[COL.estimated]),
+        status:    r[COL.status]    || "Scheduled",
+        gate:      r[COL.gate]      || "-",
+        tail:      r[COL.tail]      || "-",
+        aircraft:  r[COL.tail]      || "-",   // your table's "Aircraft" column renders f.aircraft — feed has no aircraft type, so show tail number here instead
+        codeshare: r[COL.codeshare] || "-",
+      };
+    });
 
     saveFlights(flights);
     renderFlights();
