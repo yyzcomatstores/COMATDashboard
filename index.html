@@ -750,6 +750,48 @@
     outline: none;
     border-color: var(--border-active);
   }
+  .chat-channel-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .chat-channel-tab {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 7px 14px;
+    font-family: var(--font-ui);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .chat-channel-tab:hover { border-color: var(--porter-teal-border); color: var(--text-primary); }
+  .chat-channel-tab.active {
+    background: var(--porter-teal-dim);
+    border-color: var(--porter-teal-border);
+    color: var(--porter-teal);
+  }
+  .chat-channel-tab .chan-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .chat-channel-tab[data-channel="station"] .chan-dot { background: var(--porter-teal); }
+  .chat-channel-tab[data-channel="global"] .chan-dot { background: var(--porter-gold); }
+  .chat-channel-tab .chan-badge {
+    background: rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 1px 6px;
+    font-size: 10.5px;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+  }
 </style>
 </head>
 <body>
@@ -768,7 +810,7 @@
       <div class="login-logo-mark">PD</div>
       <div>
         <div class="login-logo-text">Porter Airlines Canada Limited</div>
-        <div class="login-logo-sub">Technical Operations · Stores</div>
+        <div class="login-logo-sub">Technical Operations · </div>
       </div>
     </div>
 
@@ -812,7 +854,7 @@
       <div class="login-logo-mark">PD</div>
       <div>
         <div class="login-logo-text">Porter Airlines Canada Limited</div>
-        <div class="login-logo-sub" id="profile-station-sub">Technical Operations · Stores</div>
+        <div class="login-logo-sub" id="profile-station-sub">Technical Operations · </div>
       </div>
     </div>
 
@@ -844,7 +886,7 @@
 <header>
   <div class="logo-block">
     <div>
-      <div class="logo-text">Porter Airlines Canada Limited<span>TECHNICAL OPERATIONS || STORES</span></div>
+      <div class="logo-text">Porter Airlines Canada Limited<span>TECHNICAL OPERATIONS || </span></div>
     </div>
   </div>
   <div class="header-right">
@@ -1111,6 +1153,18 @@
     </div>
 
     <div class="chat-card">
+      <div class="chat-channel-tabs" id="chat-channel-tabs">
+        <button class="chat-channel-tab active" data-channel="station" onclick="switchChatChannel('station')">
+          <span class="chan-dot"></span>
+          <span id="chat-channel-station-label">Station Channel</span>
+          <span class="chan-badge" id="chat-channel-station-count">0</span>
+        </button>
+        <button class="chat-channel-tab" data-channel="global" onclick="switchChatChannel('global')">
+          <span class="chan-dot"></span>
+          Global Channel
+          <span class="chan-badge" id="chat-channel-global-count">0</span>
+        </button>
+      </div>
       <div class="chat-messages" id="chat-messages"></div>
       <div class="chat-typing" id="chat-typing-indicator"></div>
       <div class="chat-input-row">
@@ -1177,11 +1231,11 @@ const STATIONS = {
 // staff pick or create their own profile from the roster stored for that station.
 // Utility accounts (admin/techops/tvdisplay) skip profile selection.
 const USERS = [
-  { username: 'yyz.stores', password: 'Stores2024!', station: 'YYZ', role: 'Stores', requiresProfile: true },
-  { username: 'ytz.stores', password: 'Stores2024!', station: 'YTZ', role: 'Stores', requiresProfile: true },
-  { username: 'yhz.stores', password: 'Stores2024!', station: 'YHZ', role: 'Stores', requiresProfile: true },
-  { username: 'yow.stores', password: 'Stores2024!', station: 'YOW', role: 'Stores', requiresProfile: true },
-  { username: 'admin',     password: 'Port1!',    display: 'Admin',      role: 'Admin',    station: 'YYZ' },
+  { username: 'yyz.stores', password: 'Port1!', station: 'YYZ', role: 'Stores', requiresProfile: true },
+  { username: 'ytz.stores', password: 'MrPorter1!', station: 'YTZ', role: 'Stores', requiresProfile: true },
+  { username: 'yhz.stores', password: 'HALIFAX@1', station: 'YHZ', role: 'Stores', requiresProfile: true },
+  { username: 'yow.stores', password: 'OTTAWA1!', station: 'YOW', role: 'Stores', requiresProfile: true },
+  { username: 'admin',     password: 'porteristhebest',    display: 'Admin',      role: 'Admin',    station: 'YYZ' },
   { username: 'techops',   password: 'techops1',  display: 'Tech Ops',   role: 'Tech Ops', station: 'YYZ' },
   { username: 'tvdisplay', password: 'tvdisplay', display: 'TV Display', role: 'Display',  station: 'YYZ' },
 ];
@@ -1213,6 +1267,9 @@ function applyStationBranding(stationCode) {
 
   const chatSub = document.getElementById('chat-page-subtitle');
   if (chatSub) chatSub.textContent = `Live messages — ${st.code} COMAT team`;
+
+  const chatChannelLabel = document.getElementById('chat-channel-station-label');
+  if (chatChannelLabel) chatChannelLabel.textContent = `${st.code} Channel`;
 }
 
 // Does this flight row belong on the current station's dashboard?
@@ -1580,20 +1637,91 @@ function startComatListener() {
 }
 
 // ════════════════════════════════════════════
-// TEAM CHAT
+// TEAM CHAT — station channel + global channel
 // ════════════════════════════════════════════
-let chatListener = null;
-let chatMessagesCache = {};
+let chatListenerStation = null;
+let chatListenerGlobal  = null;
+let chatMessagesCache = { station: {}, global: {} };
+let activeChatChannel = 'station'; // 'station' | 'global'
+
+// Firebase path segment for a channel. Station channel is scoped to the
+// logged-in user's station so YOW and YYZ don't see each other's messages;
+// the global channel is one shared path everyone reads/writes.
+function chatChannelKey(channel) {
+  return channel === 'global' ? 'GLOBAL' : (currentStation || 'YYZ');
+}
+
+// Messages older than this are dropped from the channel entirely.
+const MESSAGE_TTL_MS = 48 * 60 * 60 * 1000; // 48 hours
+
+// Splits a raw {key: message} object into { fresh, expired }. Any client that
+// notices an expired message deletes it from Firebase, so it disappears for
+// everyone within moments of crossing 48 hours — no server-side job needed.
+function pruneExpiredMessages(channel, rawMessages) {
+  const now = Date.now();
+  const fresh = {};
+  Object.keys(rawMessages || {}).forEach(key => {
+    const m = rawMessages[key];
+    if (m && m.timestamp && now - m.timestamp > MESSAGE_TTL_MS) {
+      if (firebaseDb) {
+        const msgRef = window.firebaseRef(firebaseDb, 'chat_messages/' + chatChannelKey(channel) + '/' + key);
+        window.firebaseSet(msgRef, null).catch(() => {});
+      }
+    } else {
+      fresh[key] = m;
+    }
+  });
+  return fresh;
+}
+
+// Periodic safety sweep: an old message only gets re-checked when a Firebase
+// snapshot fires (i.e. someone sends a new message). In a quiet channel, a
+// message could sit past 48h with nothing to trigger a re-check — this catches that.
+function sweepExpiredChatMessages() {
+  ['station', 'global'].forEach(channel => {
+    const before = Object.keys(chatMessagesCache[channel] || {}).length;
+    chatMessagesCache[channel] = pruneExpiredMessages(channel, chatMessagesCache[channel]);
+    const after = Object.keys(chatMessagesCache[channel] || {}).length;
+    if (before !== after) {
+      updateChatChannelCounts();
+      if (activeChatChannel === channel) renderChat();
+    }
+  });
+}
+setInterval(sweepExpiredChatMessages, 5 * 60 * 1000); // re-check every 5 minutes
+
+function switchChatChannel(channel) {
+  if (channel === activeChatChannel) return;
+  activeChatChannel = channel;
+  document.querySelectorAll('.chat-channel-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.channel === channel);
+  });
+  clearTimeout(typingClearTimer);
+  clearMyTypingStatus();
+  renderChat();
+  renderTypingIndicator();
+  document.getElementById('chat-input').focus();
+}
 
 function startChatListener() {
   if (!firebaseDb) return;
 
-  const chatRef = window.firebaseRef(firebaseDb, 'chat_messages');
-  chatListener = window.firebaseOnValue(chatRef, (snapshot) => {
-    chatMessagesCache = snapshot.val() || {};
-    renderChat();
+  const stationRef = window.firebaseRef(firebaseDb, 'chat_messages/' + chatChannelKey('station'));
+  chatListenerStation = window.firebaseOnValue(stationRef, (snapshot) => {
+    chatMessagesCache.station = pruneExpiredMessages('station', snapshot.val() || {});
+    updateChatChannelCounts();
+    if (activeChatChannel === 'station') renderChat();
   }, (err) => {
-    console.error('Chat listener error:', err);
+    console.error('Chat listener error (station):', err);
+  });
+
+  const globalRef = window.firebaseRef(firebaseDb, 'chat_messages/' + chatChannelKey('global'));
+  chatListenerGlobal = window.firebaseOnValue(globalRef, (snapshot) => {
+    chatMessagesCache.global = pruneExpiredMessages('global', snapshot.val() || {});
+    updateChatChannelCounts();
+    if (activeChatChannel === 'global') renderChat();
+  }, (err) => {
+    console.error('Chat listener error (global):', err);
   });
 }
 
@@ -1607,6 +1735,7 @@ function sendChatMessage() {
     return;
   }
 
+  const channel = activeChatChannel;
   const key = Date.now() + '_' + Math.random().toString(36).slice(2, 7);
   const message = {
     sender: currentUser.display,
@@ -1619,13 +1748,14 @@ function sendChatMessage() {
 
   if (!firebaseDb) {
     // Local-only fallback if Firebase isn't connected
-    chatMessagesCache[key] = message;
+    chatMessagesCache[channel][key] = message;
+    updateChatChannelCounts();
     renderChat();
     input.value = '';
     return;
   }
 
-  const msgRef = window.firebaseRef(firebaseDb, 'chat_messages/' + key);
+  const msgRef = window.firebaseRef(firebaseDb, 'chat_messages/' + chatChannelKey(channel) + '/' + key);
   window.firebaseSet(msgRef, message).catch(err => {
     console.error('Chat send error:', err);
     alert('Message failed to send — check your connection.');
@@ -1634,17 +1764,25 @@ function sendChatMessage() {
   input.value = '';
 }
 
+function updateChatChannelCounts() {
+  const stationCount = Object.keys(chatMessagesCache.station || {}).length;
+  const globalCount  = Object.keys(chatMessagesCache.global  || {}).length;
+  const stEl = document.getElementById('chat-channel-station-count');
+  const glEl = document.getElementById('chat-channel-global-count');
+  if (stEl) stEl.textContent = stationCount;
+  if (glEl) glEl.textContent = globalCount;
+  const countEl = document.getElementById('chat-count');
+  if (countEl) countEl.textContent = stationCount + globalCount;
+}
+
 function renderChat() {
   const container = document.getElementById('chat-messages');
-  const countEl = document.getElementById('chat-count');
   if (!container) return;
 
-  const messages = Object.values(chatMessagesCache).sort((a, b) => a.timestamp - b.timestamp);
-
-  if (countEl) countEl.textContent = messages.length;
+  const messages = Object.values(chatMessagesCache[activeChatChannel] || {}).sort((a, b) => a.timestamp - b.timestamp);
 
   if (!messages.length) {
-    container.innerHTML = '<div class="chat-empty">No messages yet — say hello.</div>';
+    container.innerHTML = `<div class="chat-empty">No messages yet in this channel — say hello.</div>`;
     return;
   }
 
@@ -1678,7 +1816,7 @@ function sanitizeFirebaseKey(str) {
 
 let typingClearTimer = null;
 let lastTypingWriteAt = 0;
-let typingCache = {};
+let typingCache = { station: {}, global: {} };
 const TYPING_TTL_MS = 4000; // how long a typing flag is considered "fresh"
 
 function handleChatTyping() {
@@ -1697,35 +1835,45 @@ function handleChatTyping() {
 
 function setMyTypingStatus(ts) {
   if (!currentUser) return;
+  const channel = activeChatChannel;
   const key = sanitizeFirebaseKey(currentUser.display);
   if (!firebaseDb) {
-    typingCache[key] = { name: currentUser.display, ts };
+    typingCache[channel][key] = { name: currentUser.display, ts };
     renderTypingIndicator();
     return;
   }
-  const typingRef = window.firebaseRef(firebaseDb, 'chat_typing/' + key);
+  const typingRef = window.firebaseRef(firebaseDb, 'chat_typing/' + chatChannelKey(channel) + '/' + key);
   window.firebaseSet(typingRef, { name: currentUser.display, ts }).catch(() => {});
 }
 
 function clearMyTypingStatus() {
   if (!currentUser) return;
+  const channel = activeChatChannel;
   const key = sanitizeFirebaseKey(currentUser.display);
   if (!firebaseDb) {
-    delete typingCache[key];
+    delete typingCache[channel][key];
     renderTypingIndicator();
     return;
   }
-  const typingRef = window.firebaseRef(firebaseDb, 'chat_typing/' + key);
+  const typingRef = window.firebaseRef(firebaseDb, 'chat_typing/' + chatChannelKey(channel) + '/' + key);
   window.firebaseSet(typingRef, null).catch(() => {});
 }
 
 function startChatTypingListener() {
   if (!firebaseDb) return;
-  const typingRef = window.firebaseRef(firebaseDb, 'chat_typing');
-  window.firebaseOnValue(typingRef, (snapshot) => {
-    typingCache = snapshot.val() || {};
-    renderTypingIndicator();
+
+  const stationRef = window.firebaseRef(firebaseDb, 'chat_typing/' + chatChannelKey('station'));
+  window.firebaseOnValue(stationRef, (snapshot) => {
+    typingCache.station = snapshot.val() || {};
+    if (activeChatChannel === 'station') renderTypingIndicator();
   });
+
+  const globalRef = window.firebaseRef(firebaseDb, 'chat_typing/' + chatChannelKey('global'));
+  window.firebaseOnValue(globalRef, (snapshot) => {
+    typingCache.global = snapshot.val() || {};
+    if (activeChatChannel === 'global') renderTypingIndicator();
+  });
+
   // Re-check every second so stale entries (e.g. someone closed the tab
   // mid-type) fade out client-side even without a new Firebase event
   setInterval(renderTypingIndicator, 1000);
@@ -1736,7 +1884,7 @@ function renderTypingIndicator() {
   if (!el) return;
 
   const now = Date.now();
-  const names = Object.values(typingCache)
+  const names = Object.values(typingCache[activeChatChannel] || {})
     .filter(t => t && t.ts && now - t.ts < TYPING_TTL_MS)
     .filter(t => !currentUser || t.name !== currentUser.display)
     .map(t => t.name);
