@@ -43,12 +43,12 @@
 </script>
 <style>
   :root {
-    --porter-navy: #1a1f2e;
-    --porter-deep: #141924;
-    --porter-teal: #00c2a8;
-    --porter-textcolor1: #444edd;
-    --porter-teal-dim: rgba(0,194,168,0.15);
-    --porter-teal-border: rgba(0,194,168,0.35);
+    --porter-navy: #0e1c3a;
+    --porter-deep: #091225;
+    --porter-teal: #0ea5e9;
+    --porter-textcolor1: #5b8def;
+    --porter-teal-dim: rgba(14,165,233,0.15);
+    --porter-teal-border: rgba(14,165,233,0.35);
     --porter-gold: #f0b429;
     --porter-red: #e8413e;
     --porter-green: #2ecc8a;
@@ -56,14 +56,14 @@
     --forest-green-light: #a8d5a2;
     --forest-green-dim: rgba(46,125,64,0.16);
     --forest-green-border: rgba(46,125,64,0.3);
-    --surface: #1e2436;
-    --surface2: #252c3d;
-    --surface3: #2d3550;
+    --surface: #13264c;
+    --surface2: #162e5c;
+    --surface3: #1b376e;
     --border: rgba(255,255,255,0.07);
-    --border-active: rgba(0,194,168,0.5);
+    --border-active: rgba(14,165,233,0.5);
     --text-primary: #eef0f5;
-    --text-secondary: #8b93a8;
-    --text-muted: #555e72;
+    --text-secondary: #93a2c4;
+    --text-muted: #566288;
     --font-ui: 'Sora', sans-serif;
     --font-mono: 'DM Mono', monospace;
   }
@@ -96,8 +96,8 @@
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(ellipse 60% 50% at 20% 40%, rgba(0,194,168,0.07) 0%, transparent 70%),
-      radial-gradient(ellipse 50% 60% at 80% 70%, rgba(68,78,221,0.06) 0%, transparent 70%);
+      radial-gradient(ellipse 60% 50% at 20% 40%, rgba(14,165,233,0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 60% at 80% 70%, rgba(91,141,239,0.07) 0%, transparent 70%);
     pointer-events: none;
   }
 
@@ -551,12 +551,12 @@
   }
 
   .badge-outbound  { background: rgba(240,180,41,0.15); color: var(--porter-gold); }
-  .badge-inbound   { background: rgba(0,194,168,0.15);  color: var(--porter-teal); }
+  .badge-inbound   { background: rgba(14,165,233,0.15);  color: var(--porter-teal); }
   .badge-completed { background: rgba(46,204,138,0.15); color: var(--porter-green); }
   .badge-departed  { background: rgba(232,65,62,0.15);  color: var(--porter-red); }
   .badge-scheduled { background: rgba(139,147,168,0.12); color: var(--text-secondary); }
   .badge-loading  { background: rgba(240,180,41,0.15); color: var(--porter-gold); }
-  .badge-unloading { background: rgba(0,194,168,0.15); color: var(--porter-teal); border: 1px solid rgba(0,194,168,0.35); }
+  .badge-unloading { background: rgba(14,165,233,0.15); color: var(--porter-teal); border: 1px solid rgba(14,165,233,0.35); }
   .badge-delayed   { background: rgba(232,65,62,0.2);   color: var(--porter-red); border: 1px solid rgba(232,65,62,0.4); }
   .badge-live      { background: rgba(46,204,138,0.12); color: var(--porter-green); font-size: 11px; }
 
@@ -694,7 +694,7 @@
   .toast-success .toast-icon { color: var(--porter-green); }
   .toast-danger  { border-color: rgba(232,65,62,0.4); }
   .toast-danger  .toast-icon { color: var(--porter-red); }
-  .toast-info    { border-color: rgba(0,194,168,0.4); }
+  .toast-info    { border-color: rgba(14,165,233,0.4); }
   .toast-info    .toast-icon { color: var(--porter-teal); }
 
   /* ── MISC ── */
