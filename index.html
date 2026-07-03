@@ -615,6 +615,7 @@
 
   .btn-sm { padding: 5px 10px; font-size: 12px; }
   .btn-icon { padding: 7px 8px; }
+  .btn-view { padding: 9px 20px; font-size: 13.5px; font-weight: 600; }
 
   /* ── FORM ── */
   .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
@@ -2562,12 +2563,14 @@ function renderComat() {
   });
 
   if (search) {
-    list = list.filter(c =>
-      (c.orderNumber||'').toLowerCase().includes(search) ||
-      (c.partNumber||'').toLowerCase().includes(search) ||
-      (c.flightId||'').toLowerCase().includes(search) ||
-      (c.description||'').toLowerCase().includes(search)
-    );
+    list = list.filter(c => {
+      const cf = flights.find(fl => fl.id === c.flightId);
+      return (c.orderNumber||'').toLowerCase().includes(search) ||
+        (c.partNumber||'').toLowerCase().includes(search) ||
+        (c.flightId||'').toLowerCase().includes(search) ||
+        (cf && (cf.flight||'').toLowerCase().includes(search)) ||
+        (c.description||'').toLowerCase().includes(search);
+    });
   }
 
   document.getElementById('comat-record-count').textContent = `${list.length} record${list.length !== 1 ? 's' : ''}`;
@@ -2589,11 +2592,11 @@ function renderComat() {
     const addedDate = new Date(c.addedAt).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
 
     const actions = c.status !== 'completed'
-      ? `<button class="btn btn-ghost btn-sm" onclick="openDetailModal('${c.id}', event)">View</button>`
-      : `<span style="color:var(--text-muted); font-size:12px;">—</span>`;
+      ? `<button class="btn btn-primary btn-view" onclick="openDetailModal('${c.id}', event)">View</button>`
+      : `<span style="color:var(--text-muted); font-size:12px;">✓ ${c.receivedBy || 'Unknown'}</span>`;
 
     return `<tr class="${c.status === 'completed' ? 'completed-row' : ''}" onclick="openDetailModal('${c.id}', event)">
-      <td class="mono" style="color:var(--porter-teal)">${c.flightId}</td>
+      <td class="mono" style="color:var(--porter-teal)">${f ? f.flight : c.flightId}</td>
       <td class="mono">${route}</td>
       <td class="mono">${c.orderNumber || '—'}</td>
       <td class="mono">${c.partNumber || '—'}</td>
@@ -2616,7 +2619,7 @@ function openDetailModal(id, e) {
   if (!c) return;
   const f = flights.find(f => f.id === c.flightId);
 
-  document.getElementById('detail-modal-title').textContent = `COMAT — ${c.flightId} (${c.direction})`;
+  document.getElementById('detail-modal-title').textContent = `COMAT — ${f ? f.flight : c.flightId} (${c.direction})`;
   const completed = c.status === 'completed';
 
   document.getElementById('detail-modal-body').innerHTML = `
@@ -2625,7 +2628,7 @@ function openDetailModal(id, e) {
       ${completed ? '<span class="badge badge-completed">✓ Received</span>' : ''}
     </div>
     <div class="detail-grid">
-      <div class="detail-item"><div class="detail-item-label">Flight</div><div class="detail-item-value">${c.flightId}</div></div>
+      <div class="detail-item"><div class="detail-item-label">Flight</div><div class="detail-item-value">${f ? f.flight : c.flightId}</div></div>
       <div class="detail-item"><div class="detail-item-label">Route</div><div class="detail-item-value">${f ? f.origin+'→'+f.dest : '—'}</div></div>
       <div class="detail-item"><div class="detail-item-label">Order #</div><div class="detail-item-value">${c.orderNumber || 'N/A'}</div></div>
       <div class="detail-item"><div class="detail-item-label">Person Responsible</div><div class="detail-item-value">${c.partNumber || '—'}</div></div>
@@ -2633,7 +2636,7 @@ function openDetailModal(id, e) {
       <div class="detail-item"><div class="detail-item-label">Added</div><div class="detail-item-value" style="font-size:12px;">${new Date(c.addedAt).toLocaleString()}</div></div>
       <div class="detail-item" style="grid-column:1/-1"><div class="detail-item-label">Description</div><div class="detail-item-value" style="font-size:14px; font-family:var(--font-ui);">${c.description}</div></div>
       ${c.notes ? `<div class="detail-item" style="grid-column:1/-1"><div class="detail-item-label">Notes</div><div class="detail-item-value" style="font-size:13px; font-family:var(--font-ui); color:var(--text-secondary);">${c.notes}</div></div>` : ''}
-      ${completed ? `<div class="detail-item" style="grid-column:1/-1"><div class="detail-item-label">Received at</div><div class="detail-item-value" style="font-size:12px;">${new Date(c.completedAt).toLocaleString()}</div></div>` : ''}
+      ${completed ? `<div class="detail-item"><div class="detail-item-label">Received by</div><div class="detail-item-value">${c.receivedBy || 'Unknown'}</div></div><div class="detail-item"><div class="detail-item-label">Received at</div><div class="detail-item-value" style="font-size:12px;">${new Date(c.completedAt).toLocaleString()}</div></div>` : ''}
     </div>`;
 
   const removeBtn  = document.getElementById('detail-remove-btn');
@@ -2661,17 +2664,15 @@ function openConfirmModal(id) {
   if (!c) return;
 
   const checks = [
-    `Order number verified: ${c.orderNumber || 'N/A'}`,
-    `Person responsible confirmed: ${c.partNumber || 'N/A'}`,
-    `Pieces confirmed: ${c.quantity} piece${c.quantity > 1 ? 's' : ''}`,
-    `Description matches: ${c.description}`,
-    'Item physically received and inspected',
+    { label: `Order number verified: ${c.orderNumber || 'N/A'}`, required: true },
+    { label: `Pieces confirmed: ${c.quantity} piece${c.quantity > 1 ? 's' : ''}`, required: true },
+    { label: 'Item physically received and inspected', required: true },
   ];
 
-  document.getElementById('confirm-checks').innerHTML = checks.map((label, i) =>
+  document.getElementById('confirm-checks').innerHTML = checks.map((chk, i) =>
     `<label class="check-item" id="check-${i}">
-      <input type="checkbox" onchange="updateConfirmBtn()" id="chk-${i}">
-      <span class="check-item-label">${label}</span>
+      <input type="checkbox" onchange="updateConfirmBtn()" id="chk-${i}" data-required="${chk.required}">
+      <span class="check-item-label">${chk.label}${chk.required ? '' : ' <span style="color:var(--text-muted); font-size:11px;">(optional)</span>'}</span>
     </label>`
   ).join('');
 
@@ -2681,8 +2682,9 @@ function openConfirmModal(id) {
 
 function updateConfirmBtn() {
   const checks = document.querySelectorAll('#confirm-checks input[type="checkbox"]');
-  const allChecked = [...checks].every(c => c.checked);
-  document.getElementById('confirm-complete-btn').disabled = !allChecked;
+  const requiredChecks = [...checks].filter(chk => chk.dataset.required === 'true');
+  const allRequiredChecked = requiredChecks.every(chk => chk.checked);
+  document.getElementById('confirm-complete-btn').disabled = !allRequiredChecked;
   checks.forEach((chk, i) => {
     document.getElementById('check-' + i).classList.toggle('checked', chk.checked);
   });
@@ -2694,6 +2696,7 @@ function completeComat() {
   if (idx === -1) return;
   comat[idx].status      = 'completed';
   comat[idx].completedAt = new Date().toISOString();
+  comat[idx].receivedBy  = currentUser ? currentUser.display : 'Unknown';
   saveComat(comat);
   closeModal('confirm-modal');
   renderComat();
@@ -2764,7 +2767,7 @@ function addComat() {
   clearForm();
   renderComat();
   document.getElementById('comat-count').textContent = comat.filter(c=>c.status!=='completed').length;
-  showToast(`COMAT added to ${flightId}`, 'success');
+  showToast(`COMAT added to ${flight ? flight.flight : flightId}`, 'success');
 }
 
 function clearForm() {
