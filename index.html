@@ -695,6 +695,60 @@
     display: none;
   }
   .sync-banner.show { display: block; }
+
+  /* ── UPDATE AVAILABLE MODAL (blocking) ── */
+  .update-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100000; /* above login/profile screens */
+    background: rgba(5, 12, 9, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease;
+  }
+  .update-modal-overlay.show { display: flex; }
+
+  .update-modal-card {
+    background: var(--surface);
+    border: 1px solid var(--border-active);
+    border-radius: 14px;
+    padding: 2.2rem 2.4rem;
+    max-width: 380px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  .update-modal-icon {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: var(--porter-teal-dim);
+    border: 1px solid var(--porter-teal-border);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.1rem;
+    color: var(--porter-teal);
+  }
+
+  .update-modal-title { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+  .update-modal-text { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1.6rem; }
+
+  .update-modal-btn {
+    width: 100%;
+    background: var(--porter-green);
+    color: var(--porter-navy);
+    border: none;
+    border-radius: 9px;
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px;
+    cursor: pointer;
+    transition: filter 0.15s;
+  }
+  .update-modal-btn:hover { filter: brightness(1.1); }
   .sync-status {
     display: flex;
     align-items: center;
@@ -916,6 +970,23 @@
     </div>
 
     <button class="profile-back-btn" onclick="backToLogin()">← Use a different login</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     UPDATE AVAILABLE MODAL (blocks interaction until refreshed)
+══════════════════════════════════════════════════ -->
+<div id="update-modal-overlay" class="update-modal-overlay">
+  <div class="update-modal-card">
+    <div class="update-modal-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 12a9 9 0 1 1-2.64-6.36" stroke-linecap="round"/>
+        <path d="M21 3v6h-6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="update-modal-title">New Version Available</div>
+    <div class="update-modal-text">This app has been updated. Please refresh to load the latest version — you'll be signed out and will need to log back in.</div>
+    <button class="update-modal-btn" onclick="refreshForNewVersion()">Refresh Now</button>
   </div>
 </div>
 
@@ -1379,7 +1450,7 @@ function completeLogin(user, profile) {
     profileId: profile ? profile.id : null,
   });
 
-  localStorage.setItem('porter_session', JSON.stringify({
+  sessionStorage.setItem('porter_session', JSON.stringify({
     username: user.username,
     role: user.role,
     station: user.station,
@@ -1406,7 +1477,7 @@ function completeLogin(user, profile) {
 function doLogout() {
   if (!confirm('Sign out?')) return;
   stopTvCycle();
-  localStorage.removeItem('porter_session');
+  sessionStorage.removeItem('porter_session');
   currentUser = null;
   pendingStationUser = null;
   myFavourites = new Set();
@@ -1423,7 +1494,7 @@ function doLogout() {
 
 function checkSession() {
   try {
-    const s = JSON.parse(localStorage.getItem('porter_session'));
+    const s = JSON.parse(sessionStorage.getItem('porter_session'));
     if (!s) return;
     const user = USERS.find(x => x.username === s.username);
     if (!user) return;
@@ -2811,8 +2882,59 @@ function initApp() {
   startRefreshTimer();
 }
 
+// ════════════════════════════════════════════
+// AUTO-REFRESH ON NEW DEPLOY
+// The GitHub Actions deploy workflow stamps version.json with the commit SHA
+// on every push. The site fetches it on load, then polls it periodically —
+// if the value changes, a new deploy has gone out, so we reload to pick it up.
+// ════════════════════════════════════════════
+const VERSION_CHECK_INTERVAL_MS = 5 * 60 * 1000; // check every 5 minutes
+let knownAppVersion = null;
+
+async function fetchAppVersion() {
+  try {
+    const resp = await fetch('version.json?cachebust=' + Date.now(), { cache: 'no-store' });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data.version || null;
+  } catch (e) {
+    return null; // offline or file missing — just skip this check
+  }
+}
+
+async function initVersionCheck() {
+  knownAppVersion = await fetchAppVersion();
+  if (knownAppVersion) {
+    setInterval(checkForNewDeploy, VERSION_CHECK_INTERVAL_MS);
+  }
+}
+
+async function checkForNewDeploy() {
+  const latest = await fetchAppVersion();
+  if (latest && knownAppVersion && latest !== knownAppVersion) {
+    knownAppVersion = latest; // prevent this firing more than once
+    showUpdateModal();
+  }
+}
+
+function showUpdateModal() {
+  const overlay = document.getElementById('update-modal-overlay');
+  if (overlay) overlay.classList.add('show');
+}
+
+// Signs the user out (so the fresh page load lands on the login screen, not
+// a stale cached session) and force-reloads to guarantee the new deploy is
+// pulled from the network rather than the browser cache.
+function refreshForNewVersion() {
+  try {
+    sessionStorage.removeItem('porter_session');
+  } catch (e) {}
+  window.location.reload();
+}
+
 // Check for existing session on page load
 window.addEventListener('load', checkSession);
+window.addEventListener('load', initVersionCheck);
 </script>
 <script src="fetchFromSheet.js"></script>
 </body>
