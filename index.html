@@ -2888,7 +2888,7 @@ function initApp() {
 // on every push. The site fetches it on load, then polls it periodically —
 // if the value changes, a new deploy has gone out, so we reload to pick it up.
 // ════════════════════════════════════════════
-const VERSION_CHECK_INTERVAL_MS = 5 * 60 * 1000; // check every 5 minutes
+const VERSION_CHECK_INTERVAL_MS = 30 * 1000; // check every 30 seconds
 let knownAppVersion = null;
 
 async function fetchAppVersion() {
