@@ -683,11 +683,11 @@
   /* SYNC STATUS BANNER */
   .sync-banner {
     position: fixed;
-    top: 60px;
+    bottom: 0;
     left: 0;
     right: 0;
     background: var(--porter-navy);
-    border-bottom: 1px solid var(--border);
+    border-top: 1px solid var(--border);
     padding: 6px 2rem;
     font-size: 11px;
     font-family: var(--font-mono);
@@ -1621,9 +1621,9 @@ function initFirebase() {
       if (user) {
         firebaseAuthenticated = true;
         console.log('Firebase auth active:', user.uid);
+        checkFirebaseConnection(); // update the banner every time auth (re)confirms, not just the first
         if (!firebaseSyncStarted) {
           firebaseSyncStarted = true;
-          checkFirebaseConnection();
           startComatListener();
           startChatListener();
           startChatTypingListener();
@@ -2752,15 +2752,25 @@ updateClock();
 // INIT
 // ════════════════════════════════════════════
 function initApp() {
-  // Show sync banner immediately
-  updateSyncBanner('loading', 'Initializing sync...');
+  // If Firebase already finished connecting (e.g. it was kicked off earlier
+  // during the profile-selection screen), reflect that immediately instead of
+  // resetting the banner to "Initializing..." — otherwise nothing re-triggers
+  // an update since the auth-state-changed callback only ever fires once.
+  if (firebaseSyncStarted && firebaseAuthenticated) {
+    checkFirebaseConnection();
+  } else {
+    updateSyncBanner('loading', 'Initializing sync...');
+  }
 
   // Wait for Firebase to load, then initialize
   let firebaseCheckAttempts = 0;
   const checkFirebaseReady = () => {
     firebaseCheckAttempts++;
     if (window.firebaseDb && window.firebaseAuth) {
-      initFirebase();
+      initFirebase(); // safe no-op if already started earlier
+      if (firebaseAuthenticated) {
+        checkFirebaseConnection(); // catch the case auth resolved just before/between checks
+      }
     } else if (firebaseCheckAttempts > 50) { // 5 seconds timeout
       updateSyncBanner('error', 'Firebase failed to load — local mode only');
     } else {
