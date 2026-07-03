@@ -22,6 +22,11 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Stamp build version (used by the site to detect new deploys)
+        run: |
+          echo "{\"version\": \"${{ github.sha }}\", \"deployedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > version.json
+          cat version.json
+
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
