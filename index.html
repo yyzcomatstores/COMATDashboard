@@ -626,6 +626,33 @@
   textarea { resize: vertical; min-height: 80px; }
 
   .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+
+  /* FLIGHT SEARCH/SELECT COMBOBOX */
+  .flight-combo { position: relative; }
+  .flight-combo-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    max-height: 260px;
+    overflow-y: auto;
+    background: var(--surface2);
+    border: 1px solid var(--border-active);
+    border-radius: 9px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+    z-index: 50;
+  }
+  .flight-combo-dropdown.open { display: block; }
+  .flight-combo-item {
+    padding: 9px 14px;
+    font-size: 13px;
+    font-family: var(--font-mono);
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+  }
+  .flight-combo-item:last-child { border-bottom: none; }
+  .flight-combo-item:hover, .flight-combo-item.highlighted { background: var(--porter-teal-dim); color: var(--porter-teal); }
+  .flight-combo-empty { padding: 12px 14px; font-size: 12.5px; color: var(--text-muted); }
   .form-section-title { font-size: 13px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 1rem; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
 
   /* ── MODAL ── */
@@ -1188,6 +1215,7 @@
         <thead>
           <tr>
             <th style="width:34px;"></th>
+            <th class="station-col" style="display:none;">Station</th>
             <th>Flight</th>
             <th>Route</th>
             <th>Aircraft</th>
@@ -1239,6 +1267,7 @@
       <table>
         <thead>
           <tr>
+            <th class="station-col" style="display:none;">Station</th>
             <th>Flight</th>
             <th>Route</th>
             <th>Order #</th>
@@ -1276,9 +1305,12 @@
       <div class="form-grid">
         <div class="form-group">
           <label class="form-label">Select Flight</label>
-          <select id="form-flight">
-            <option value="">— Choose a flight —</option>
-          </select>
+          <div class="flight-combo" id="flight-combo">
+            <input type="text" id="form-flight-search" placeholder="Search flight #, destination..." autocomplete="off"
+                   oninput="filterFlightCombo()" onfocus="openFlightCombo()" onkeydown="flightComboKeydown(event)">
+            <input type="hidden" id="form-flight" value="">
+            <div class="flight-combo-dropdown" id="flight-combo-dropdown"></div>
+          </div>
         </div>
 
       </div>
@@ -1414,12 +1446,15 @@ const STATIONS = {
   YTZ: { code: 'YTZ', name: 'Billy Bishop Toronto City Airport', city: 'Toronto' },
   YHZ: { code: 'YHZ', name: 'Halifax Stanfield Intl Airport', city: 'Halifax' },
   YOW: { code: 'YOW', name: 'Ottawa Macdonald-Cartier Intl Airport', city: 'Ottawa' },
+  ALL: { code: 'ALL', name: 'All Stations — Supervisor View', city: 'All Stations' },
 };
 
 // USER ACCOUNTS
 // Station accounts (requiresProfile: true) are shared logins — after signing in,
 // staff pick or create their own profile from the roster stored for that station.
 // Utility accounts (admin/techops/tvdisplay) skip profile selection.
+// The Supervisor account uses the special "ALL" station, which isn't scoped to
+// any single base — it sees combined flights/COMAT from every station at once.
 const USERS = [
   { username: 'yyz.stores', password: 'Port1!', station: 'YYZ', role: 'Stores', requiresProfile: true },
   { username: 'ytz.stores', password: 'MrPorter1!', station: 'YTZ', role: 'Stores', requiresProfile: true },
@@ -1428,6 +1463,7 @@ const USERS = [
   { username: 'admin',     password: 'Port1!',    display: 'Admin',      role: 'Admin',    station: 'YYZ' },
   { username: 'techops',   password: 'techops1',  display: 'Tech Ops',   role: 'Tech Ops', station: 'YYZ' },
   { username: 'tvdisplay', password: 'tvdisplay', display: 'TV Display', role: 'Display',  station: 'YYZ' },
+  { username: 'supervisor', password: 'Supervisor2024!', station: 'ALL', role: 'Supervisor', requiresProfile: true },
 ];
 
 // LOGIN
@@ -1437,36 +1473,57 @@ let currentStation = 'YYZ';
 function applyStationBranding(stationCode) {
   const st = STATIONS[stationCode] || STATIONS.YYZ;
   currentStation = st.code;
+  const isAll = st.code === 'ALL';
 
-  document.title = `Porter Airlines — ${st.code} COMAT`;
+  document.title = isAll ? 'Porter Airlines — Supervisor View' : `Porter Airlines — ${st.code} COMAT`;
 
   const badgeText = document.getElementById('station-badge-text');
-  if (badgeText) badgeText.textContent = `${st.code} — ${st.name}`;
+  if (badgeText) badgeText.textContent = isAll ? `${st.code} — ${st.name}` : `${st.code} — ${st.name}`;
 
   const flightsTitle = document.getElementById('flights-page-title');
-  if (flightsTitle) flightsTitle.textContent = `STORES — ${st.code}`;
+  if (flightsTitle) flightsTitle.textContent = isAll ? 'STORES — ALL STATIONS' : `STORES — ${st.code}`;
 
   const flightsSub = document.getElementById('flights-page-subtitle');
-  if (flightsSub) flightsSub.textContent = `Porter Airlines departures and arrivals @ ${st.city}`;
+  if (flightsSub) flightsSub.textContent = isAll
+    ? 'Porter Airlines departures and arrivals — every station combined'
+    : `Porter Airlines departures and arrivals @ ${st.city}`;
 
   const comatSub = document.getElementById('comat-page-subtitle');
-  if (comatSub) comatSub.textContent = `Company material movements — ${st.code} station`;
+  if (comatSub) comatSub.textContent = isAll
+    ? 'Company material movements — all stations combined'
+    : `Company material movements — ${st.code} station`;
 
   const manageSub = document.getElementById('manage-page-subtitle');
-  if (manageSub) manageSub.textContent = `Attach company material to a Porter flight departing or arriving ${st.code}`;
+  if (manageSub) manageSub.textContent = isAll
+    ? 'Attach company material to a Porter flight at any station'
+    : `Attach company material to a Porter flight departing or arriving ${st.code}`;
 
   const chatSub = document.getElementById('chat-page-subtitle');
-  if (chatSub) chatSub.textContent = `Live messages — ${st.code} COMAT team`;
+  if (chatSub) chatSub.textContent = isAll ? 'Live messages — Global channel' : `Live messages — ${st.code} COMAT team`;
 
   const chatChannelLabel = document.getElementById('chat-channel-station-label');
   if (chatChannelLabel) chatChannelLabel.textContent = `${st.code} Channel`;
+
+  // Supervisors aren't tied to one station's local chat room — only Global applies.
+  const stationChatTab = document.querySelector('.chat-channel-tab[data-channel="station"]');
+  if (stationChatTab) stationChatTab.style.display = isAll ? 'none' : 'flex';
+  if (isAll && activeChatChannel === 'station') switchChatChannel('global');
+
+  // A supervisor's view spans every station, so a "Station" column is added
+  // to the flights/COMAT tables for clarity (hidden otherwise since it'd be
+  // redundant — a normal station login only ever sees its own station).
+  document.querySelectorAll('.station-col').forEach(el => {
+    el.style.display = isAll ? '' : 'none';
+  });
 }
 
 // Does this flight row belong on the current station's dashboard?
 // Live sheet data carries an explicit `station` field (one row per station a
 // flight touches). Fallback sample data has no `station` field, so we fall
-// back to matching origin/dest directly.
+// back to matching origin/dest directly. Supervisors (station === 'ALL') see
+// every flight from every station combined.
 function belongsToStation(f) {
+  if (currentStation === 'ALL') return true;
   if (f.station) return f.station === currentStation;
   return f.origin === currentStation || f.dest === currentStation;
 }
@@ -1475,6 +1532,7 @@ function belongsToStation(f) {
 // Live sheet data carries an explicit `direction` field relative to `station`.
 function isFlightInbound(f) {
   if (f.direction) return f.direction === 'ARRIVAL';
+  if (currentStation === 'ALL') return false; // only affects offline/sample fallback data
   return f.origin !== currentStation;
 }
 
@@ -2451,7 +2509,7 @@ function renderFlights() {
 
   const tbody = document.getElementById('flights-tbody');
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">✈</div><div class="empty-label">No flights found. Click Refresh to load flights.</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">✈</div><div class="empty-label">No flights found. Click Refresh to load flights.</div></div></td></tr>`;
     return;
   }
 
@@ -2510,6 +2568,7 @@ function renderFlights() {
           </svg>
         </button>
       </td>
+      <td class="station-col" style="display:none;"><span class="badge badge-scheduled">${f.station || currentStation}</span></td>
       <td class="mono" style="color:var(--porter-teal)">${f.flight}</td>
       <td>${badge} ${f.origin}→${f.dest} <span style="color:var(--text-muted); font-size:12px;">${f.destName}</span></td>
       <td class="muted">${f.aircraft}</td>
@@ -2528,7 +2587,7 @@ function flightRowClick(id) {
   document.querySelectorAll('.tab-btn')[2].classList.add('active');
   document.getElementById('page-manage').classList.add('active');
   updateFlightDropdown();
-  setTimeout(() => { document.getElementById('form-flight').value = id; }, 50);
+  setTimeout(() => { selectFlightCombo(id); }, 50);
 }
 
 // RENDER: COMAT DASHBOARD
@@ -2578,7 +2637,7 @@ function renderComat() {
   const tbody = document.getElementById('comat-tbody');
   if (!list.length) {
     const labels = { all:'COMAT', outbound:'outbound COMAT', inbound:'inbound COMAT', completed:'completed records' };
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">📦</div><div class="empty-label">No ${labels[currentSubTab]} found.</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">📦</div><div class="empty-label">No ${labels[currentSubTab]} found.</div></div></td></tr>`;
     return;
   }
 
@@ -2596,6 +2655,7 @@ function renderComat() {
       : `<span style="color:var(--text-muted); font-size:12px;">✓ ${c.receivedBy || 'Unknown'}</span>`;
 
     return `<tr class="${c.status === 'completed' ? 'completed-row' : ''}" onclick="openDetailModal('${c.id}', event)">
+      <td class="station-col" style="display:none;"><span class="badge badge-scheduled">${(f && f.station) || currentStation}</span></td>
       <td class="mono" style="color:var(--porter-teal)">${f ? f.flight : c.flightId}</td>
       <td class="mono">${route}</td>
       <td class="mono">${c.orderNumber || '—'}</td>
@@ -2716,18 +2776,119 @@ function removeComat(id) {
 }
 
 // ADD COMAT FORM
+// FLIGHT SEARCH/SELECT COMBOBOX (Add COMAT page)
+let flightComboOptions = [];
+let flightComboHighlightIndex = -1;
+
 function updateFlightDropdown() {
   const flights = getFlights().filter(belongsToStation);
-  const sel = document.getElementById('form-flight');
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">— Choose a flight —</option>' +
-    flights.map(f => {
-      const dir = isFlightInbound(f) ? 'IN' : 'OUT';
-      const time = new Date(f.std).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-      return `<option value="${f.id}">[${dir}] ${f.flight} — ${f.origin}→${f.dest} @ ${time}</option>`;
-    }).join('');
-  if (cur) sel.value = cur;
+  const hidden = document.getElementById('form-flight');
+  const cur = hidden.value;
+
+  flightComboOptions = flights.map(f => {
+    const dir = isFlightInbound(f) ? 'IN' : 'OUT';
+    const time = new Date(f.std).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    const stationTag = currentStation === 'ALL' ? `[${f.station || '—'}] ` : '';
+    return {
+      id: f.id,
+      label: `${stationTag}[${dir}] ${f.flight} — ${f.origin}→${f.dest} @ ${time}`,
+      search: `${f.flight} ${f.origin} ${f.dest} ${f.destName||''} ${f.station||''}`.toLowerCase(),
+    };
+  }).sort((a, b) => new Date(flights.find(f=>f.id===a.id).std) - new Date(flights.find(f=>f.id===b.id).std));
+
+  // Keep the visible search text correct for a selection that survives a refresh
+  if (cur) {
+    const match = flightComboOptions.find(o => o.id === cur);
+    const searchInput = document.getElementById('form-flight-search');
+    if (match && searchInput) searchInput.value = match.label;
+  }
 }
+
+function openFlightCombo() {
+  const searchInput = document.getElementById('form-flight-search');
+  renderFlightComboList(searchInput ? searchInput.value : '');
+  document.getElementById('flight-combo-dropdown').classList.add('open');
+}
+
+function closeFlightCombo() {
+  const dd = document.getElementById('flight-combo-dropdown');
+  if (dd) dd.classList.remove('open');
+  flightComboHighlightIndex = -1;
+}
+
+function filterFlightCombo() {
+  const input = document.getElementById('form-flight-search');
+  // Typing invalidates whatever was previously selected, until a new choice is made
+  document.getElementById('form-flight').value = '';
+  openFlightCombo();
+  renderFlightComboList(input.value);
+}
+
+function renderFlightComboList(query) {
+  const dropdown = document.getElementById('flight-combo-dropdown');
+  if (!dropdown) return;
+  const q = (query || '').trim().toLowerCase();
+  const matches = q ? flightComboOptions.filter(o => o.search.includes(q)) : flightComboOptions;
+  flightComboHighlightIndex = -1;
+
+  if (!matches.length) {
+    dropdown.innerHTML = `<div class="flight-combo-empty">No matching flights</div>`;
+    return;
+  }
+
+  dropdown.innerHTML = matches.map(o =>
+    `<div class="flight-combo-item" data-id="${o.id}" onclick="selectFlightCombo('${o.id}')">${o.label}</div>`
+  ).join('');
+}
+
+function selectFlightCombo(id) {
+  const opt = flightComboOptions.find(o => o.id === id);
+  if (!opt) return;
+  document.getElementById('form-flight').value = id;
+  document.getElementById('form-flight-search').value = opt.label;
+  closeFlightCombo();
+}
+
+function flightComboKeydown(e) {
+  const dropdown = document.getElementById('flight-combo-dropdown');
+  if (!dropdown.classList.contains('open')) {
+    if (e.key === 'ArrowDown' || e.key === 'Enter') openFlightCombo();
+    return;
+  }
+  const items = [...dropdown.querySelectorAll('.flight-combo-item')];
+  if (!items.length) return;
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    flightComboHighlightIndex = Math.min(flightComboHighlightIndex + 1, items.length - 1);
+    highlightFlightComboItem(items);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    flightComboHighlightIndex = Math.max(flightComboHighlightIndex - 1, 0);
+    highlightFlightComboItem(items);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (flightComboHighlightIndex >= 0 && items[flightComboHighlightIndex]) {
+      selectFlightCombo(items[flightComboHighlightIndex].dataset.id);
+    } else if (items.length === 1) {
+      selectFlightCombo(items[0].dataset.id);
+    }
+  } else if (e.key === 'Escape') {
+    closeFlightCombo();
+  }
+}
+
+function highlightFlightComboItem(items) {
+  items.forEach((el, i) => el.classList.toggle('highlighted', i === flightComboHighlightIndex));
+  const active = items[flightComboHighlightIndex];
+  if (active) active.scrollIntoView({ block: 'nearest' });
+}
+
+// Close the dropdown when clicking anywhere outside the combobox
+document.addEventListener('click', (e) => {
+  const combo = document.getElementById('flight-combo');
+  if (combo && !combo.contains(e.target)) closeFlightCombo();
+});
 
 function addComat() {
   const flightId    = document.getElementById('form-flight').value;
@@ -2771,7 +2932,7 @@ function addComat() {
 }
 
 function clearForm() {
-  ['form-flight','form-orderNumber','form-part','form-notes'].forEach(id => {
+  ['form-flight','form-flight-search','form-orderNumber','form-part','form-notes'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
