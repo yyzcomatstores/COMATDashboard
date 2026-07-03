@@ -2596,13 +2596,40 @@ let selectedComatId = null;
 function renderComat() {
   const allFlights = getFlights();
   const flights = allFlights.filter(belongsToStation);
-  const stationFlightIds = new Set(flights.map(f => f.id));
-  const comat   = getComat().filter(c => stationFlightIds.has(c.flightId));
+
+  // A COMAT record should show up at a station if the flight it's attached to
+  // actually touches that station as its origin OR destination — regardless
+  // of which per-station leg was selected when the record was created. This
+  // matters because a flight between two of our own bases (e.g. YYZ->YOW) has
+  // a separate internal id per station it touches; the physical shipment still
+  // needs to be visible at both ends, not just the one it was logged under.
+  //
+  // Direction (Outbound/Inbound) is also recomputed relative to whoever is
+  // VIEWING it, not the station that originally logged it — the same shipment
+  // is Outbound from YYZ's perspective and Inbound from YOW's.
+  const comat = getComat().map(c => {
+    const f = allFlights.find(fl => fl.id === c.flightId);
+    let direction = c.direction;
+    let visible = currentStation === 'ALL';
+    if (f) {
+      if (currentStation === 'ALL') {
+        direction = c.direction;
+      } else if (f.dest === currentStation) {
+        direction = 'INBOUND';
+        visible = true;
+      } else if (f.origin === currentStation) {
+        direction = 'OUTBOUND';
+        visible = true;
+      }
+    }
+    return { ...c, _flight: f, _direction: direction, _visible: visible };
+  }).filter(c => c._visible);
+
   const search  = (document.getElementById('comat-search').value || '').toLowerCase();
 
   const active    = comat.filter(c => c.status !== 'completed');
-  const outbound  = active.filter(c => c.direction === 'OUTBOUND');
-  const inbound   = active.filter(c => c.direction === 'INBOUND');
+  const outbound  = active.filter(c => c._direction === 'OUTBOUND');
+  const inbound   = active.filter(c => c._direction === 'INBOUND');
   const completed = comat.filter(c => c.status === 'completed');
   document.getElementById('comat-count').textContent = active.length;
 
@@ -2615,21 +2642,20 @@ function renderComat() {
 
   let list = comat.filter(c => {
     if (currentSubTab === 'completed') return c.status === 'completed';
-    if (currentSubTab === 'outbound')  return c.direction === 'OUTBOUND' && c.status !== 'completed';
-    if (currentSubTab === 'inbound')   return c.direction === 'INBOUND'  && c.status !== 'completed';
+    if (currentSubTab === 'outbound')  return c._direction === 'OUTBOUND' && c.status !== 'completed';
+    if (currentSubTab === 'inbound')   return c._direction === 'INBOUND'  && c.status !== 'completed';
     if (currentSubTab === 'all')       return c.status !== 'completed';  // ALL = active only
     return c.status !== 'completed';
   });
 
   if (search) {
-    list = list.filter(c => {
-      const cf = flights.find(fl => fl.id === c.flightId);
-      return (c.orderNumber||'').toLowerCase().includes(search) ||
-        (c.partNumber||'').toLowerCase().includes(search) ||
-        (c.flightId||'').toLowerCase().includes(search) ||
-        (cf && (cf.flight||'').toLowerCase().includes(search)) ||
-        (c.description||'').toLowerCase().includes(search);
-    });
+    list = list.filter(c =>
+      (c.orderNumber||'').toLowerCase().includes(search) ||
+      (c.partNumber||'').toLowerCase().includes(search) ||
+      (c.flightId||'').toLowerCase().includes(search) ||
+      (c._flight && (c._flight.flight||'').toLowerCase().includes(search)) ||
+      (c.description||'').toLowerCase().includes(search)
+    );
   }
 
   document.getElementById('comat-record-count').textContent = `${list.length} record${list.length !== 1 ? 's' : ''}`;
@@ -2642,9 +2668,9 @@ function renderComat() {
   }
 
   tbody.innerHTML = list.map(c => {
-    const f = flights.find(f => f.id === c.flightId);
+    const f = c._flight;
     const route = f ? `${f.origin}→${f.dest}` : '—';
-    const dirBadge = c.direction === 'OUTBOUND'
+    const dirBadge = c._direction === 'OUTBOUND'
       ? '<span class="badge badge-outbound">⬆ OUT</span>'
       : '<span class="badge badge-inbound">⬇ IN</span>';
     const completeBadge = c.status === 'completed' ? '<span class="badge badge-completed">✓ Received</span>' : dirBadge;
@@ -2678,13 +2704,18 @@ function openDetailModal(id, e) {
   const c = comat.find(c => c.id === id);
   if (!c) return;
   const f = flights.find(f => f.id === c.flightId);
+  let direction = c.direction;
+  if (f && currentStation !== 'ALL') {
+    if (f.dest === currentStation) direction = 'INBOUND';
+    else if (f.origin === currentStation) direction = 'OUTBOUND';
+  }
 
-  document.getElementById('detail-modal-title').textContent = `COMAT — ${f ? f.flight : c.flightId} (${c.direction})`;
+  document.getElementById('detail-modal-title').textContent = `COMAT — ${f ? f.flight : c.flightId} (${direction})`;
   const completed = c.status === 'completed';
 
   document.getElementById('detail-modal-body').innerHTML = `
     <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
-      ${c.direction === 'OUTBOUND' ? '<span class="badge badge-outbound">⬆ Outbound</span>' : '<span class="badge badge-inbound">⬇ Inbound</span>'}
+      ${direction === 'OUTBOUND' ? '<span class="badge badge-outbound">⬆ Outbound</span>' : '<span class="badge badge-inbound">⬇ Inbound</span>'}
       ${completed ? '<span class="badge badge-completed">✓ Received</span>' : ''}
     </div>
     <div class="detail-grid">
