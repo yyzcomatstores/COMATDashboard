@@ -832,6 +832,25 @@
     color: var(--text-muted);
     margin-bottom: 3px;
     font-family: var(--font-mono);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .chat-msg-sender {
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 12.5px;
+    font-family: var(--font-ui);
+  }
+  .chat-msg-station {
+    color: var(--porter-teal);
+    font-weight: 600;
+    font-size: 10px;
+    background: var(--porter-teal-dim);
+    border: 1px solid var(--porter-teal-border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    letter-spacing: 0.3px;
   }
   .chat-msg-text {
     font-size: 14px;
@@ -1991,6 +2010,7 @@ function sendChatMessage() {
   const key = Date.now() + '_' + Math.random().toString(36).slice(2, 7);
   const message = {
     sender: currentUser.display,
+    station: currentUser.station || null,
     text: text,
     timestamp: Date.now(),
   };
@@ -2047,7 +2067,11 @@ function renderChat() {
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     return `
       <div class="chat-msg ${isOwn ? 'own' : ''}">
-        <div class="chat-msg-meta">${escapeHtml(m.sender)} · ${time}</div>
+        <div class="chat-msg-meta">
+          <span class="chat-msg-sender">${escapeHtml(m.sender)}</span>
+          ${m.station ? `<span class="chat-msg-station">${escapeHtml(m.station)}</span>` : ''}
+          <span>· ${time}</span>
+        </div>
         <div class="chat-msg-text">${escaped}</div>
       </div>`;
   }).join('');
