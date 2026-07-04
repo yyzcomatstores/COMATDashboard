@@ -1460,6 +1460,24 @@
 
 <script>
 // STATION CONFIG
+// Airport code -> city name, used to show a friendly name next to the route
+// (e.g. "YYZ→YOW  Ottawa"). The live feed only ever gives us airport codes,
+// not names, so this fills that in. Add more codes here as needed — anything
+// not listed just shows the route with no name, rather than breaking.
+const AIRPORT_NAMES = {
+  YYZ: 'Toronto', YTZ: 'Toronto', YOW: 'Ottawa', YUL: 'Montreal', YHZ: 'Halifax',
+  YWG: 'Winnipeg', YYC: 'Calgary', YEG: 'Edmonton', YVR: 'Vancouver', YYT: "St. John's",
+  YQB: 'Quebec City', YFC: 'Fredericton', YSJ: 'Saint John', YQM: 'Moncton',
+  YXU: 'London', YQG: 'Windsor', YTS: 'Timmins', YQT: 'Thunder Bay', YSB: 'Sudbury',
+  JFK: 'New York', EWR: 'Newark', BOS: 'Boston', ORD: 'Chicago',
+  MIA: 'Miami', MCO: 'Orlando', TPA: 'Tampa', FLL: 'Fort Lauderdale',
+  LAS: 'Las Vegas', LAX: 'Los Angeles', SFO: 'San Francisco',
+  IAD: 'Washington, DC', DCA: 'Washington, DC', PHL: 'Philadelphia',
+  ABE: 'Allentown', PBI: 'West Palm Beach', MYR: 'Myrtle Beach',
+  RSW: 'Fort Myers', SAV: 'Savannah', RIC: 'Richmond',
+  NAS: 'Nassau', PUJ: 'Punta Cana', TPE: 'Taipei',
+};
+
 const STATIONS = {
   YYZ: { code: 'YYZ', name: 'Toronto Pearson Intl Airport', city: 'Toronto' },
   YTZ: { code: 'YTZ', name: 'Billy Bishop Toronto City Airport', city: 'Toronto' },
@@ -2448,21 +2466,21 @@ function startFavouritesListener() {
   });
 }
 
-function toggleFavourite(flightId, evt) {
+function toggleFavourite(flightNumber, evt) {
   if (evt) evt.stopPropagation();
   const favKey = getFavouriteKey();
   if (!favKey) return;
 
-  const isFav = myFavourites.has(flightId);
+  const isFav = myFavourites.has(flightNumber);
   // Optimistic local update so the star responds instantly
-  if (isFav) myFavourites.delete(flightId); else myFavourites.add(flightId);
+  if (isFav) myFavourites.delete(flightNumber); else myFavourites.add(flightNumber);
   renderFlights();
 
   if (!firebaseDb) return; // local-only fallback — nothing further to sync
 
   const favRef = window.firebaseRef(
     firebaseDb,
-    `favourites/${currentStation}/${sanitizeFirebaseKey(favKey)}/${sanitizeFirebaseKey(flightId)}`
+    `favourites/${currentStation}/${sanitizeFirebaseKey(favKey)}/${sanitizeFirebaseKey(flightNumber)}`
   );
   window.firebaseSet(favRef, isFav ? null : true).catch(err => {
     console.error('Failed to update favourite:', err);
@@ -2519,9 +2537,9 @@ function renderFlights() {
     const matchSearch = !search ||
       (f.flight||'').toLowerCase().includes(search) ||
       (f.dest||'').toLowerCase().includes(search) ||
-      (f.destName||'').toLowerCase().includes(search);
+      (f.destName || AIRPORT_NAMES[f.dest] || '').toLowerCase().includes(search);
     const matchStatus = !filter || f.status === filter;
-    const matchFav = !favOnly || myFavourites.has(f.id);
+    const matchFav = !favOnly || myFavourites.has(f.flight);
     return matchSearch && matchStatus && matchFav;
   });
 
@@ -2606,11 +2624,11 @@ function renderFlights() {
       delayCell = `<span style="color:${cdColor};font-family:var(--font-mono);font-size:18px;">${ctdwn}</span>`;
     }
 
-    const isFav = myFavourites.has(f.id);
+    const isFav = myFavourites.has(f.flight);
 
     return `<tr onclick="flightRowClick('${f.id}')">
       <td onclick="event.stopPropagation()">
-        <button class="fav-star-btn ${isFav ? 'active' : ''}" onclick="toggleFavourite('${f.id}', event)" title="${isFav ? 'Remove from favourites' : 'Add to favourites'}">
+        <button class="fav-star-btn ${isFav ? 'active' : ''}" onclick="toggleFavourite('${f.flight}', event)" title="${isFav ? 'Remove from favourites' : 'Add to favourites'}">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.3">
             <path d="M8 1.5l2.02 4.1 4.53.66-3.28 3.19.77 4.5L8 11.77l-4.04 2.13.77-4.5-3.28-3.19 4.53-.66z" stroke-linejoin="round"/>
           </svg>
@@ -2618,7 +2636,7 @@ function renderFlights() {
       </td>
       <td class="station-col" style="display:none;"><span class="badge badge-scheduled">${f.station || currentStation}</span></td>
       <td class="mono" style="color:var(--porter-teal)">${f.flight}</td>
-      <td>${badge} ${f.origin}→${f.dest} <span style="color:var(--text-muted); font-size:12px;">${f.destName}</span></td>
+      <td>${badge} ${f.origin}→${f.dest} <span style="color:var(--text-muted); font-size:12px;">${f.destName || AIRPORT_NAMES[f.dest] || ''}</span></td>
       <td style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: var(--porter-green); font-weight: 600;">${f.aircraft}</td>
       <td class="mono">${timeCell}</td>
       <td>${delayCell}</td>
@@ -2866,12 +2884,13 @@ function updateFlightDropdown() {
 
   flightComboOptions = flights.map(f => {
     const dir = isFlightInbound(f) ? 'IN' : 'OUT';
+    const dateStr = new Date(f.std).toLocaleDateString([], {month:'short', day:'numeric'});
     const time = new Date(f.std).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
     const stationTag = currentStation === 'ALL' ? `[${f.station || '—'}] ` : '';
     return {
       id: f.id,
-      label: `${stationTag}[${dir}] ${f.flight} — ${f.origin}→${f.dest} @ ${time}`,
-      search: `${f.flight} ${f.origin} ${f.dest} ${f.destName||''} ${f.station||''}`.toLowerCase(),
+      label: `${stationTag}[${dir}] ${f.flight} — ${f.origin}→${f.dest} @ ${dateStr}, ${time}`,
+      search: `${f.flight} ${f.origin} ${f.dest} ${f.destName || AIRPORT_NAMES[f.dest] || ''} ${f.station||''} ${dateStr}`.toLowerCase(),
     };
   }).sort((a, b) => new Date(flights.find(f=>f.id===a.id).std) - new Date(flights.find(f=>f.id===b.id).std));
 
