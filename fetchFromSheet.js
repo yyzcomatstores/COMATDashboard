@@ -80,16 +80,21 @@ async function fetchLiveFlights() {
 
     const flights = dataRows.map(r => {
       const station = r[COL.station] || r[COL.dest]; // fall back for older sheet format
+      const std = toDate(r[COL.scheduled]);
+      // Date tag (YYYY-MM-DD) so the same flight number recurring on different
+      // days gets a distinct id — otherwise "today's PD157" and "tomorrow's
+      // PD157" would collide under the same id and COMAT/favourites couldn't
+      // tell them apart.
+      const dateTag = (std && !Number.isNaN(std.getTime())) ? std.toISOString().slice(0, 10) : "unknown";
       return {
-        // Unique per (flight, station) — the same flight number can appear once
-        // per home station it touches, each with that station's own gate/status.
-        id:        `${r[COL.flight]}_${station}`,
+        // Unique per (flight, station, date)
+        id:        `${r[COL.flight]}_${station}_${dateTag}`,
         flight:    r[COL.flight],
         origin:    r[COL.origin],
         dest:      r[COL.dest],
         station:   station,
         direction: r[COL.direction],  // ARRIVAL / DEPARTURE, relative to `station`
-        std:       toDate(r[COL.scheduled]),
+        std:       std,
         etd:       toDate(r[COL.estimated]),
         status:    r[COL.status]    || "Scheduled",
         gate:      r[COL.gate]      || "-",
