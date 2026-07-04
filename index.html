@@ -2557,7 +2557,7 @@ function renderFlights() {
     const dir = f.isInbound ? 'INBOUND' : 'OUTBOUND';
     const badge = dir === 'OUTBOUND' ? '<span class="badge badge-outbound">OUT</span>' : '<span class="badge badge-inbound">IN</span>';
 
-    // For delayed flights, show countdown instead of "Delayed"
+    // For delayed flights, show "DELAYED" with the countdown as a hover tooltip
     let statusBadge;
     if (f.status === 'Delayed') {
       const effectiveTime = new Date(f.std).getTime() + ((f.delay||0)*60000);
@@ -2565,7 +2565,7 @@ function renderFlights() {
       const hh = Math.floor(minsLeft / 60);
       const mm = minsLeft % 60;
       const countdownStr = hh > 0 ? `${hh}h ${mm}m` : `${mm}m`;
-      statusBadge = `<span class="badge badge-delayed" title="Delayed — departs/arrives in ${countdownStr}">⚠ ${countdownStr}</span>`;
+      statusBadge = `<span class="badge badge-delayed" title="Delayed — departs/arrives in ${countdownStr}">⚠ DELAYED</span>`;
     } else {
       statusBadge = {
         'Departed':  '<span class="badge badge-departed">Departed</span>',
@@ -2578,11 +2578,14 @@ function renderFlights() {
       }[f.status] || `<span class="badge badge-scheduled">${f.status}</span>`;
     }
 
+    const dateStr = new Date(f.std).toLocaleDateString([], {month:'short', day:'numeric'});
     const time = new Date(f.std).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-    let timeCell = time;
+    const dateLabel = `<div style="font-size:10px; color:var(--text-muted); font-family:var(--font-ui); margin-bottom:1px;">${dateStr}</div>`;
+    let timeCell = dateLabel + time;
     if (f.delay > 0 && f.etd) {
       const newTime = new Date(f.etd).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-      timeCell = `<span style="text-decoration:line-through; color:var(--text-muted);">${time}</span><br>` +
+      timeCell = dateLabel +
+                 `<span style="text-decoration:line-through; color:var(--text-muted);">${time}</span><br>` +
                  `<span style="color:var(--porter-red); font-weight:700;">${newTime}</span>`;
     }
 
@@ -2723,7 +2726,7 @@ function renderComat() {
 
     const actions = c.status !== 'completed'
       ? `<button class="btn btn-primary btn-view" onclick="openDetailModal('${c.id}', event)">View</button>`
-      : `<span style="color:var(--text-muted); font-size:12px;">✓ ${c.receivedBy || 'Unknown'}</span>`;
+      : `<span style="color:var(--porter-green); font-size:14px; font-weight:700;">✓ ${c.receivedBy || 'Unknown'}</span>`;
 
     return `<tr class="${c.status === 'completed' ? 'completed-row' : ''}" onclick="openDetailModal('${c.id}', event)">
       <td class="station-col" style="display:none;"><span class="badge badge-scheduled">${(f && f.station) || currentStation}</span></td>
