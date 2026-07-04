@@ -2309,6 +2309,19 @@ function loadSampleFlights() {
   document.getElementById('refresh-icon').classList.remove('spin');
 }
 
+// Real delay in minutes, derived from comparing the live estimated time (etd)
+// against the originally scheduled time (std). Previously the code read a
+// `f.delay` field that was never actually populated by the data pipeline, so
+// delays were silently never detected — this fixes that at the source.
+function getDelayMinutes(f) {
+  if (!f.std || !f.etd) return 0;
+  const std = new Date(f.std).getTime();
+  const etd = new Date(f.etd).getTime();
+  if (Number.isNaN(std) || Number.isNaN(etd)) return 0;
+  const diffMin = Math.round((etd - std) / 60000);
+  return diffMin > 0 ? diffMin : 0;
+}
+
 function computeFlightStatus(stdIso, delayMin = 0, rawStatus = '', isInbound = false) {
   if (['Cancelled', 'N/A'].includes(rawStatus)) return rawStatus;
   if (!stdIso) return rawStatus || 'Scheduled';
@@ -2468,10 +2481,12 @@ function renderFlights() {
 
   const enhancedFlights = flights.map(f => {
     const isInbound = isFlightInbound(f);
+    const delayMin = getDelayMinutes(f);
     return {
       ...f,
       isInbound,
-      status: computeFlightStatus(f.std, f.delay, f.status, isInbound),
+      delay: delayMin,
+      status: computeFlightStatus(f.std, delayMin, f.status, isInbound),
     };
   });
 
@@ -2564,6 +2579,12 @@ function renderFlights() {
     }
 
     const time = new Date(f.std).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    let timeCell = time;
+    if (f.delay > 0 && f.etd) {
+      const newTime = new Date(f.etd).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      timeCell = `<span style="text-decoration:line-through; color:var(--text-muted);">${time}</span><br>` +
+                 `<span style="color:var(--porter-red); font-weight:700;">${newTime}</span>`;
+    }
 
     // CTDWN cell: countdown from now to effective departure/arrival time
     const effectiveTimeD = new Date(f.std).getTime() + ((f.delay || 0) * 60000);
@@ -2596,7 +2617,7 @@ function renderFlights() {
       <td class="mono" style="color:var(--porter-teal)">${f.flight}</td>
       <td>${badge} ${f.origin}→${f.dest} <span style="color:var(--text-muted); font-size:12px;">${f.destName}</span></td>
       <td style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: var(--porter-green); font-weight: 600;">${f.aircraft}</td>
-      <td class="mono">${time}</td>
+      <td class="mono">${timeCell}</td>
       <td>${delayCell}</td>
       <td>${statusBadge}</td>
       <td class="mono">${f.gate}</td>
