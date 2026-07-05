@@ -558,6 +558,7 @@
   .badge-loading  { background: rgba(240,180,41,0.15); color: var(--porter-gold); }
   .badge-unloading { background: rgba(203,213,225,0.15); color: var(--porter-teal); border: 1px solid rgba(203,213,225,0.35); }
   .badge-delayed   { background: rgba(232,65,62,0.2);   color: var(--porter-red); border: 1px solid rgba(232,65,62,0.4); }
+  .badge-aog       { background: var(--porter-red); color: #ffffff; border: 1px solid var(--porter-red); font-weight: 700; }
   .badge-live      { background: rgba(46,204,138,0.12); color: var(--porter-green); font-size: 11px; }
 
   /* ── TV CYCLE INDICATOR ── */
@@ -680,30 +681,32 @@
   .fd-plane { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: 17px; color: var(--porter-green); transition: left 0.4s ease; filter: drop-shadow(0 0 4px rgba(0,0,0,0.4)); }
   .fd-legs { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   .fd-leg-city { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 1px; }
-  .fd-leg-date { font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px; }
-  .fd-leg-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+  .fd-leg-date { font-size: 11.5px; color: var(--text-secondary); margin-bottom: 12px; }
+  .fd-leg-label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
   .fd-leg-time { font-size: 21px; font-weight: 700; color: var(--porter-green); font-family: var(--font-mono); margin-bottom: 10px; }
-  .fd-leg-time.unavailable { font-size: 13px; font-weight: 400; color: var(--text-muted); font-family: var(--font-ui); font-style: italic; }
+  .fd-leg-time.unavailable { font-size: 13px; font-weight: 400; color: var(--text-secondary); font-family: var(--font-ui); font-style: italic; }
   .fd-leg-meta { display: flex; gap: 20px; }
   .fd-leg-meta-item { font-size: 12px; }
-  .fd-leg-meta-label { color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; }
+  .fd-leg-meta-label { color: var(--text-secondary); font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; }
   .fd-leg-meta-value { color: var(--text-primary); font-family: var(--font-mono); font-weight: 600; }
   .fd-footer { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-  .fd-footer-meta { font-size: 11.5px; color: var(--text-muted); font-family: var(--font-mono); }
+  .fd-footer-meta { font-size: 11.5px; color: var(--text-secondary); font-family: var(--font-mono); }
 
   .fd-comat-section { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
-  .fd-comat-heading { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 10px; font-weight: 600; }
+  .fd-comat-heading { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 10px; font-weight: 600; }
   .fd-comat-list { display: flex; flex-direction: column; gap: 8px; }
   .fd-comat-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 9px; padding: 10px 12px; cursor: pointer; transition: border-color 0.15s; }
   .fd-comat-chip:hover { border-color: var(--porter-teal-border); }
   .fd-comat-chip.completed { opacity: 0.65; }
+  .fd-comat-chip.aog { border-color: var(--porter-red); }
   .fd-comat-chip-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; gap: 8px; }
   .fd-comat-order { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; color: var(--porter-teal); }
   .fd-comat-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
   .fd-comat-badge.pending { background: var(--porter-teal-dim); color: var(--porter-teal); border: 1px solid var(--porter-teal-border); }
   .fd-comat-badge.done { background: rgba(46,204,138,0.15); color: var(--porter-green); border: 1px solid rgba(46,204,138,0.35); }
+  .fd-comat-badge.aog { background: var(--porter-red); color: #ffffff; border: 1px solid var(--porter-red); font-weight: 700; }
   .fd-comat-desc { font-size: 13px; color: var(--text-primary); margin-bottom: 2px; }
-  .fd-comat-meta { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+  .fd-comat-meta { font-size: 11px; color: var(--text-secondary); font-family: var(--font-mono); }
   .detail-item-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
   .detail-item-value { font-size: 13px; color: var(--text-primary); font-family: var(--font-mono); }
 
@@ -1673,6 +1676,8 @@ function completeLogin(user, profile) {
 
   initApp();
   startFavouritesListener();
+  startChatStationListener();
+  startChatTypingStationListener();
   showToast(`Welcome, ${currentUser.display}`, 'success');
   if (user.role === 'Display') {
     setTimeout(startTvCycle, 800);
@@ -1687,6 +1692,12 @@ function doLogout() {
   pendingStationUser = null;
   myFavourites = new Set();
   favouritesListenerKey = null;
+  activeChatChannel = 'station';
+  chatMessagesCache = { station: {}, global: {} };
+  typingCache = { station: {}, global: {} };
+  document.querySelectorAll('.chat-channel-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.channel === 'station');
+  });
   if (firebaseAuth && window.firebaseSignOut) {
     window.firebaseSignOut(firebaseAuth).catch(() => {});
   }
@@ -1716,6 +1727,8 @@ function checkSession() {
     document.getElementById('app').style.display = 'block';
     initApp();
     startFavouritesListener();
+    startChatStationListener();
+    startChatTypingStationListener();
     if (user.role === 'Display') {
       setTimeout(startTvCycle, 800);
     }
@@ -1901,9 +1914,16 @@ function initFirebase() {
         if (!firebaseSyncStarted) {
           firebaseSyncStarted = true;
           startComatListener();
-          startChatListener();
-          startChatTypingListener();
         }
+        // These re-run on every successful auth (including switching accounts
+        // mid-session) because they're scoped to the CURRENT station — unlike
+        // COMAT, which reads one global path and filters client-side, chat is
+        // subscribed to a station-specific Firebase path, so it has to be
+        // re-attached whenever the logged-in station changes.
+        startChatGlobalListener();
+        startChatStationListener();
+        startChatTypingGlobalListener();
+        startChatTypingStationListener();
       } else {
         firebaseAuthenticated = false;
         console.log('Firebase auth required; signing in anonymously...');
@@ -2043,8 +2063,39 @@ function switchChatChannel(channel) {
   document.getElementById('chat-input').focus();
 }
 
+let chatStationListenerFor = null; // which station's chat listener is currently attached
+
 function startChatListener() {
-  if (!firebaseDb) return;
+  // Kept for compatibility with anything still calling it directly — just
+  // delegates to the two halves below.
+  startChatGlobalListener();
+  startChatStationListener();
+}
+
+function startChatGlobalListener() {
+  if (!firebaseDb || chatListenerGlobal) return; // global channel never changes — subscribe once only
+  const globalRef = window.firebaseRef(firebaseDb, 'chat_messages/' + chatChannelKey('global'));
+  chatListenerGlobal = window.firebaseOnValue(globalRef, (snapshot) => {
+    chatMessagesCache.global = pruneExpiredMessages('global', snapshot.val() || {});
+    updateChatChannelCounts();
+    if (activeChatChannel === 'global') renderChat();
+  }, (err) => {
+    console.error('Chat listener error (global):', err);
+  });
+}
+
+function startChatStationListener() {
+  if (!firebaseDb || !firebaseAuthenticated) {
+    setTimeout(startChatStationListener, 200);
+    return;
+  }
+  const station = currentStation;
+  if (chatStationListenerFor === station) return; // already correctly attached
+
+  if (typeof chatListenerStation === 'function') chatListenerStation(); // detach the previous station's listener
+  chatStationListenerFor = station;
+  chatMessagesCache.station = {}; // clear the old station's messages immediately, don't wait for the new snapshot
+  if (document.getElementById('page-chat') && document.getElementById('page-chat').classList.contains('active')) renderChat();
 
   const stationRef = window.firebaseRef(firebaseDb, 'chat_messages/' + chatChannelKey('station'));
   chatListenerStation = window.firebaseOnValue(stationRef, (snapshot) => {
@@ -2053,15 +2104,6 @@ function startChatListener() {
     if (activeChatChannel === 'station') renderChat();
   }, (err) => {
     console.error('Chat listener error (station):', err);
-  });
-
-  const globalRef = window.firebaseRef(firebaseDb, 'chat_messages/' + chatChannelKey('global'));
-  chatListenerGlobal = window.firebaseOnValue(globalRef, (snapshot) => {
-    chatMessagesCache.global = pruneExpiredMessages('global', snapshot.val() || {});
-    updateChatChannelCounts();
-    if (activeChatChannel === 'global') renderChat();
-  }, (err) => {
-    console.error('Chat listener error (global):', err);
   });
 }
 
@@ -2204,14 +2246,19 @@ function clearMyTypingStatus() {
   window.firebaseSet(typingRef, null).catch(() => {});
 }
 
-function startChatTypingListener() {
-  if (!firebaseDb) return;
+let chatTypingStationListenerFor = null; // which station's typing listener is currently attached
+let chatTypingGlobalListenerStarted = false;
+let typingSweepStarted = false;
 
-  const stationRef = window.firebaseRef(firebaseDb, 'chat_typing/' + chatChannelKey('station'));
-  window.firebaseOnValue(stationRef, (snapshot) => {
-    typingCache.station = snapshot.val() || {};
-    if (activeChatChannel === 'station') renderTypingIndicator();
-  });
+function startChatTypingListener() {
+  // Kept for compatibility — delegates to the two halves below.
+  startChatTypingGlobalListener();
+  startChatTypingStationListener();
+}
+
+function startChatTypingGlobalListener() {
+  if (!firebaseDb || chatTypingGlobalListenerStarted) return;
+  chatTypingGlobalListenerStarted = true;
 
   const globalRef = window.firebaseRef(firebaseDb, 'chat_typing/' + chatChannelKey('global'));
   window.firebaseOnValue(globalRef, (snapshot) => {
@@ -2219,9 +2266,30 @@ function startChatTypingListener() {
     if (activeChatChannel === 'global') renderTypingIndicator();
   });
 
-  // Re-check every second so stale entries (e.g. someone closed the tab
-  // mid-type) fade out client-side even without a new Firebase event
-  setInterval(renderTypingIndicator, 1000);
+  if (!typingSweepStarted) {
+    typingSweepStarted = true;
+    // Re-check every second so stale entries (e.g. someone closed the tab
+    // mid-type) fade out client-side even without a new Firebase event
+    setInterval(renderTypingIndicator, 1000);
+  }
+}
+
+function startChatTypingStationListener() {
+  if (!firebaseDb || !firebaseAuthenticated) {
+    setTimeout(startChatTypingStationListener, 200);
+    return;
+  }
+  const station = currentStation;
+  if (chatTypingStationListenerFor === station) return; // already correctly attached
+
+  chatTypingStationListenerFor = station;
+  typingCache.station = {}; // clear the previous station's typing state immediately
+
+  const stationRef = window.firebaseRef(firebaseDb, 'chat_typing/' + chatChannelKey('station'));
+  window.firebaseOnValue(stationRef, (snapshot) => {
+    typingCache.station = snapshot.val() || {};
+    if (activeChatChannel === 'station') renderTypingIndicator();
+  });
 }
 
 function renderTypingIndicator() {
@@ -2622,7 +2690,11 @@ function renderFlights() {
   }
 
   tbody.innerHTML = list.map(f => {
-    const hasCom = comat.filter(c => c.flightId === f.id && c.status !== 'completed').length;
+    const flightPairForCom = findFlightPair(f);
+    const relevantIdsForCom = [f.id, flightPairForCom ? flightPairForCom.id : null].filter(Boolean);
+    const flightComatItems = comat.filter(c => relevantIdsForCom.includes(c.flightId) && c.status !== 'completed');
+    const hasCom = flightComatItems.length;
+    const hasAOG = flightComatItems.some(c => c.description === 'AOG');
     const dir = f.isInbound ? 'INBOUND' : 'OUTBOUND';
     const badge = dir === 'OUTBOUND' ? '<span class="badge badge-outbound">OUT</span>' : '<span class="badge badge-inbound">IN</span>';
 
@@ -2693,7 +2765,7 @@ function renderFlights() {
       <td>${delayCell}</td>
       <td>${statusBadge}</td>
       <td class="mono">${f.gate}</td>
-      <td>${hasCom ? `<span class="badge badge-outbound">${hasCom} item${hasCom>1?'s':''}</span>` : '<span style="color:var(--text-muted);font-size:12px;">—</span>'}</td>
+      <td>${hasAOG ? '<span class="badge badge-aog">🚨 AOG</span>' : hasCom ? `<span class="badge badge-outbound">${hasCom} item${hasCom>1?'s':''}</span>` : '<span style="color:var(--text-muted);font-size:12px;">—</span>'}</td>
     </tr>`;
   }).join('');
 }
@@ -2834,7 +2906,7 @@ function openFlightDetailModal(id) {
     <div class="fd-status-row">
       <span class="badge" style="background:rgba(255,255,255,0.06); color:${phaseColor}; border:1px solid ${phaseColor};">● ${progress.phaseLabel}</span>
       ${f.delay > 0 ? '<span class="badge badge-delayed">⚠ DELAYED</span>' : ''}
-      ${f.gate ? `<span style="font-size:12px; color:var(--text-muted); font-family:var(--font-mono);">Aircraft ${f.aircraft || f.tail || '–'}</span>` : ''}
+      ${f.gate ? `<span style="font-size:15px; font-weight:700; color:#ffffff; font-family:var(--font-mono);">✈ ${f.aircraft || f.tail || '–'}</span>` : ''}
     </div>
 
     <div class="fd-diagram">
@@ -2859,10 +2931,10 @@ function openFlightDetailModal(id) {
       <div class="fd-comat-heading">📦 COMAT on this Flight (${comatItems.length})</div>
       <div class="fd-comat-list">
         ${comatItems.map(c => `
-          <div class="fd-comat-chip ${c.status === 'completed' ? 'completed' : ''}" onclick="closeModal('flight-detail-modal'); openDetailModal('${c.id}');">
+          <div class="fd-comat-chip ${c.status === 'completed' ? 'completed' : (c.description === 'AOG' ? 'aog' : '')}" onclick="closeModal('flight-detail-modal'); openDetailModal('${c.id}');">
             <div class="fd-comat-chip-top">
               <span class="fd-comat-order">${escapeHtml(c.orderNumber || 'No Order #')}</span>
-              ${c.status === 'completed' ? '<span class="fd-comat-badge done">✓ Received</span>' : '<span class="fd-comat-badge pending">● Pending</span>'}
+              ${c.status === 'completed' ? '<span class="fd-comat-badge done">✓ Received</span>' : c.description === 'AOG' ? '<span class="fd-comat-badge aog">🚨 AOG</span>' : '<span class="fd-comat-badge pending">● Pending</span>'}
             </div>
             <div class="fd-comat-desc">${escapeHtml(c.description || '')}</div>
             <div class="fd-comat-meta">${c.quantity} pc${c.quantity > 1 ? 's' : ''} · ${escapeHtml(c.partNumber || '—')}</div>
