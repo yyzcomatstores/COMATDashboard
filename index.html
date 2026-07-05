@@ -668,6 +668,42 @@
 
   /* ── DETAIL GRID ── */
   .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+
+  /* FLIGHT DETAIL MODAL — route diagram */
+  .fd-status-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 8px; }
+  .fd-diagram { display: flex; align-items: center; gap: 16px; margin: 6px 0 26px; }
+  .fd-code { font-size: 30px; font-weight: 700; font-family: var(--font-ui); letter-spacing: 0.5px; color: var(--text-primary); line-height: 1; }
+  .fd-line-wrap { flex: 1; position: relative; padding-top: 24px; min-width: 80px; }
+  .fd-duration { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 12px; color: var(--text-secondary); font-family: var(--font-mono); white-space: nowrap; }
+  .fd-line { position: relative; height: 2px; background: var(--border); border-radius: 2px; }
+  .fd-line-fill { position: absolute; top: 0; left: 0; height: 2px; background: var(--porter-green); border-radius: 2px; transition: width 0.4s ease; }
+  .fd-plane { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: 17px; color: var(--porter-green); transition: left 0.4s ease; filter: drop-shadow(0 0 4px rgba(0,0,0,0.4)); }
+  .fd-legs { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .fd-leg-city { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 1px; }
+  .fd-leg-date { font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px; }
+  .fd-leg-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+  .fd-leg-time { font-size: 21px; font-weight: 700; color: var(--porter-green); font-family: var(--font-mono); margin-bottom: 10px; }
+  .fd-leg-time.unavailable { font-size: 13px; font-weight: 400; color: var(--text-muted); font-family: var(--font-ui); font-style: italic; }
+  .fd-leg-meta { display: flex; gap: 20px; }
+  .fd-leg-meta-item { font-size: 12px; }
+  .fd-leg-meta-label { color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; }
+  .fd-leg-meta-value { color: var(--text-primary); font-family: var(--font-mono); font-weight: 600; }
+  .fd-footer { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+  .fd-footer-meta { font-size: 11.5px; color: var(--text-muted); font-family: var(--font-mono); }
+
+  .fd-comat-section { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .fd-comat-heading { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 10px; font-weight: 600; }
+  .fd-comat-list { display: flex; flex-direction: column; gap: 8px; }
+  .fd-comat-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 9px; padding: 10px 12px; cursor: pointer; transition: border-color 0.15s; }
+  .fd-comat-chip:hover { border-color: var(--porter-teal-border); }
+  .fd-comat-chip.completed { opacity: 0.65; }
+  .fd-comat-chip-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; gap: 8px; }
+  .fd-comat-order { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; color: var(--porter-teal); }
+  .fd-comat-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
+  .fd-comat-badge.pending { background: var(--porter-teal-dim); color: var(--porter-teal); border: 1px solid var(--porter-teal-border); }
+  .fd-comat-badge.done { background: rgba(46,204,138,0.15); color: var(--porter-green); border: 1px solid rgba(46,204,138,0.35); }
+  .fd-comat-desc { font-size: 13px; color: var(--text-primary); margin-bottom: 2px; }
+  .fd-comat-meta { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
   .detail-item-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
   .detail-item-value { font-size: 13px; color: var(--text-primary); font-family: var(--font-mono); }
 
@@ -1433,6 +1469,21 @@
       <button class="btn btn-ghost" onclick="closeModal('detail-modal')">Close</button>
       <button class="btn btn-danger btn-sm" id="detail-remove-btn">Remove Record</button>
       <button class="btn btn-success btn-sm" id="detail-confirm-btn">Confirm Receipt →</button>
+    </div>
+  </div>
+</div>
+
+<!-- FLIGHT DETAIL MODAL -->
+<div class="modal-overlay" id="flight-detail-modal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <div class="modal-title" id="flight-detail-title">Flight Details</div>
+      <button class="modal-close" onclick="closeModal('flight-detail-modal')">×</button>
+    </div>
+    <div class="modal-body" id="flight-detail-body"></div>
+    <div class="modal-footer" style="justify-content: space-between;">
+      <button class="btn btn-ghost" onclick="closeModal('flight-detail-modal')">Close</button>
+      <button class="btn btn-primary" id="flight-detail-comat-btn">+ Add COMAT to this Flight</button>
     </div>
   </div>
 </div>
@@ -2626,7 +2677,7 @@ function renderFlights() {
 
     const isFav = myFavourites.has(f.flight);
 
-    return `<tr onclick="flightRowClick('${f.id}')">
+    return `<tr onclick="openFlightDetailModal('${f.id}')">
       <td onclick="event.stopPropagation()">
         <button class="fav-star-btn ${isFav ? 'active' : ''}" onclick="toggleFavourite('${f.flight}', event)" title="${isFav ? 'Remove from favourites' : 'Add to favourites'}">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.3">
@@ -2645,6 +2696,193 @@ function renderFlights() {
       <td>${hasCom ? `<span class="badge badge-outbound">${hasCom} item${hasCom>1?'s':''}</span>` : '<span style="color:var(--text-muted);font-size:12px;">—</span>'}</td>
     </tr>`;
   }).join('');
+}
+
+// ════════════════════════════════════════════
+// FLIGHT DETAIL MODAL (route diagram + progress)
+// ════════════════════════════════════════════
+
+// Recompute a flight's live status/delay/direction fresh, the same way
+// renderFlights() does — needed here since this modal is opened directly
+// from an id rather than from the already-enhanced row data.
+function getEnhancedFlightById(id) {
+  const f = getFlights().find(fl => fl.id === id);
+  if (!f) return null;
+  const isInbound = isFlightInbound(f);
+  const delay = getDelayMinutes(f);
+  const status = computeFlightStatus(f.std, delay, f.status, isInbound);
+  return { ...f, isInbound, delay, status };
+}
+
+// If this flight's other endpoint is also one of our monitored stations, find
+// that station's own row for the same physical flight — this is what lets us
+// show BOTH a real scheduled departure AND arrival time (and compute a real
+// flight duration), instead of just the one leg the current station tracks.
+function findFlightPair(f) {
+  if (!f || !f.id || !f.flight) return null;
+  const parts = f.id.split('_'); // [flightNumber, station, dateTag]
+  if (parts.length < 3) return null; // sample/offline fallback data isn't tagged this way
+  const dateTag = parts[parts.length - 1];
+  const counterpartStation = f.station === f.origin ? f.dest : f.origin;
+  if (!STATIONS[counterpartStation]) return null; // other end isn't one of our bases
+  const counterpartId = `${f.flight}_${counterpartStation}_${dateTag}`;
+  return getEnhancedFlightById(counterpartId);
+}
+
+function getFlightLegs(f, pair) {
+  if (f.direction === 'DEPARTURE') return { dep: f, arr: pair };
+  if (f.direction === 'ARRIVAL')   return { dep: pair, arr: f };
+  return f.isInbound ? { dep: pair, arr: f } : { dep: f, arr: pair };
+}
+
+// Works out how far along the route the aircraft is, for the visual diagram.
+// Uses real scheduled times when both legs are known (accurate %, real
+// duration); otherwise falls back to a coarse position based on status alone.
+function computeFlightProgress(dep, arr) {
+  const depStatus = dep ? dep.status : null;
+  const arrStatus = arr ? arr.status : null;
+
+  let phase = 'scheduled';
+  if (arrStatus === 'Arrived') phase = 'landed';
+  else if (depStatus === 'Departed' || arrStatus === 'Unloading' || arrStatus === 'Arriving') phase = 'enroute';
+  else if (depStatus === 'Loading') phase = 'boarding';
+
+  let pct, durationText = null;
+
+  if (dep && arr && dep.std && arr.std) {
+    const depMs = new Date(dep.std).getTime();
+    const arrMs = new Date(arr.std).getTime();
+    if (!Number.isNaN(depMs) && !Number.isNaN(arrMs) && arrMs > depMs) {
+      const durationMin = Math.round((arrMs - depMs) / 60000);
+      const h = Math.floor(durationMin / 60), m = durationMin % 60;
+      durationText = h > 0 ? `${h}h ${m}min` : `${m}min`;
+
+      if (phase === 'landed') pct = 100;
+      else if (phase === 'scheduled') pct = 0;
+      else {
+        const now = Date.now();
+        pct = ((now - depMs) / (arrMs - depMs)) * 100;
+        pct = Math.max(4, Math.min(96, pct)); // keep the plane visible on the line, not stacked on an endpoint
+      }
+    }
+  }
+
+  if (pct === undefined) {
+    pct = { scheduled: 0, boarding: 15, enroute: 55, landed: 100 }[phase];
+  }
+
+  const phaseLabel = { scheduled: 'SCHEDULED', boarding: 'BOARDING', enroute: 'IN FLIGHT', landed: 'LANDED' }[phase];
+  return { pct, phase, phaseLabel, durationText };
+}
+
+function renderFlightLegBlock(leg, label, city, code) {
+  if (!leg || !leg.std) {
+    return `
+      <div>
+        <div class="fd-leg-city">${city}</div>
+        <div class="fd-leg-date">${code}</div>
+        <div class="fd-leg-label">${label}</div>
+        <div class="fd-leg-time unavailable">Not tracked at this station</div>
+        <div class="fd-leg-meta">
+          <div class="fd-leg-meta-item"><div class="fd-leg-meta-label">Terminal</div><div class="fd-leg-meta-value">–</div></div>
+          <div class="fd-leg-meta-item"><div class="fd-leg-meta-label">Gate</div><div class="fd-leg-meta-value">–</div></div>
+        </div>
+      </div>`;
+  }
+
+  const dateStr = new Date(leg.std).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+  const showDelay = leg.delay > 0 && leg.etd;
+  const timeHtml = showDelay
+    ? `<span style="text-decoration:line-through; color:var(--text-muted); font-size:14px;">${new Date(leg.std).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span> ` +
+      `<span style="color:var(--porter-red);">${new Date(leg.etd).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>`
+    : new Date(leg.std).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  return `
+    <div>
+      <div class="fd-leg-city">${city} · ${dateStr}</div>
+      <div class="fd-leg-date">${code}</div>
+      <div class="fd-leg-label">${label}</div>
+      <div class="fd-leg-time">${timeHtml}</div>
+      <div class="fd-leg-meta">
+        <div class="fd-leg-meta-item"><div class="fd-leg-meta-label">Terminal</div><div class="fd-leg-meta-value">–</div></div>
+        <div class="fd-leg-meta-item"><div class="fd-leg-meta-label">Gate</div><div class="fd-leg-meta-value">${leg.gate || '–'}</div></div>
+      </div>
+    </div>`;
+}
+
+function openFlightDetailModal(id) {
+  const f = getEnhancedFlightById(id);
+  if (!f) return;
+
+  const pair = findFlightPair(f);
+  const { dep, arr } = getFlightLegs(f, pair);
+  const progress = computeFlightProgress(dep, arr);
+
+  // A COMAT record could've been logged against either station's leg id for
+  // this same physical flight, so check both when they exist.
+  const relevantIds = [f.id, pair ? pair.id : null].filter(Boolean);
+  const comatItems = getComat().filter(c => relevantIds.includes(c.flightId));
+
+  const originCity = AIRPORT_NAMES[f.origin] || f.origin;
+  const destCity = AIRPORT_NAMES[f.dest] || f.dest;
+
+  document.getElementById('flight-detail-title').textContent = `${f.flight} — ${f.origin} → ${f.dest}`;
+
+  const phaseColor = { scheduled: 'var(--porter-teal)', boarding: 'var(--porter-gold)', enroute: 'var(--porter-green)', landed: 'var(--text-secondary)' }[progress.phase];
+
+  document.getElementById('flight-detail-body').innerHTML = `
+    <div class="fd-status-row">
+      <span class="badge" style="background:rgba(255,255,255,0.06); color:${phaseColor}; border:1px solid ${phaseColor};">● ${progress.phaseLabel}</span>
+      ${f.delay > 0 ? '<span class="badge badge-delayed">⚠ DELAYED</span>' : ''}
+      ${f.gate ? `<span style="font-size:12px; color:var(--text-muted); font-family:var(--font-mono);">Aircraft ${f.aircraft || f.tail || '–'}</span>` : ''}
+    </div>
+
+    <div class="fd-diagram">
+      <div class="fd-code">${f.origin}</div>
+      <div class="fd-line-wrap">
+        ${progress.durationText ? `<div class="fd-duration">${progress.durationText}</div>` : ''}
+        <div class="fd-line">
+          <div class="fd-line-fill" style="width:${progress.pct}%"></div>
+          <div class="fd-plane" style="left:${progress.pct}%">✈</div>
+        </div>
+      </div>
+      <div class="fd-code">${f.dest}</div>
+    </div>
+
+    <div class="fd-legs">
+      ${renderFlightLegBlock(dep, 'Scheduled departure', originCity, f.origin)}
+      ${renderFlightLegBlock(arr, 'Scheduled arrival', destCity, f.dest)}
+    </div>
+
+    ${comatItems.length ? `
+    <div class="fd-comat-section">
+      <div class="fd-comat-heading">📦 COMAT on this Flight (${comatItems.length})</div>
+      <div class="fd-comat-list">
+        ${comatItems.map(c => `
+          <div class="fd-comat-chip ${c.status === 'completed' ? 'completed' : ''}" onclick="closeModal('flight-detail-modal'); openDetailModal('${c.id}');">
+            <div class="fd-comat-chip-top">
+              <span class="fd-comat-order">${escapeHtml(c.orderNumber || 'No Order #')}</span>
+              ${c.status === 'completed' ? '<span class="fd-comat-badge done">✓ Received</span>' : '<span class="fd-comat-badge pending">● Pending</span>'}
+            </div>
+            <div class="fd-comat-desc">${escapeHtml(c.description || '')}</div>
+            <div class="fd-comat-meta">${c.quantity} pc${c.quantity > 1 ? 's' : ''} · ${escapeHtml(c.partNumber || '—')}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>` : ''}
+
+    <div class="fd-footer">
+      <span class="fd-footer-meta">Flight ${f.flight}${f.codeshare && f.codeshare !== '-' ? ` · Codeshare ${f.codeshare}` : ''}</span>
+      <span class="fd-footer-meta">Station ${f.station || currentStation}</span>
+    </div>
+  `;
+
+  document.getElementById('flight-detail-comat-btn').onclick = () => {
+    closeModal('flight-detail-modal');
+    flightRowClick(id);
+  };
+
+  openModal('flight-detail-modal');
 }
 
 function flightRowClick(id) {
