@@ -3,9 +3,9 @@ name: Sync Porter Flights to Google Sheet
 
 on:
   schedule:
-    # Runs every 5 minutes (GitHub's minimum reliable interval)
+    # Runs every 15 minutes
     # For more frequent live refreshes, the website itself polls every 60s
-    - cron: "*/5 * * * *"
+    - cron: "*/15 * * * *"
 
   # Also allow manual runs from the Actions tab
   workflow_dispatch:
