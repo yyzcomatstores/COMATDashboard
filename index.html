@@ -79,7 +79,7 @@
   }
 
   /* LOGIN SCREEN */
-  #login-screen, #profile-screen {
+  #login-screen, #profile-screen, #maintenance-screen {
     position: fixed;
     inset: 0;
     background: var(--porter-deep);
@@ -90,7 +90,13 @@
     animation: fadeIn 0.4s ease;
   }
 
-  #login-screen.hidden, #profile-screen.hidden { display: none; }
+  #login-screen.hidden, #profile-screen.hidden, #maintenance-screen.hidden { display: none; }
+
+  #maintenance-screen { z-index: 2000000; text-align: center; } /* above everything, including the intro video */
+  .maintenance-icon { font-size: 52px; margin-bottom: 18px; }
+  .maintenance-title { font-family: var(--font-ui); font-size: 24px; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; }
+  .maintenance-text { font-family: var(--font-ui); font-size: 14.5px; color: var(--text-secondary); max-width: 380px; line-height: 1.6; margin: 0 auto; }
+  .maintenance-brand { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase; }
 
   .login-bg {
     position: absolute;
@@ -1024,6 +1030,19 @@
 </head>
 <body>
 <!-- ══════════════════════════════════════════════════
+     MAINTENANCE SCREEN — flip MAINTENANCE_MODE to true (near the top of
+     the script below) to show this and block access to the rest of the site
+══════════════════════════════════════════════════ -->
+<div id="maintenance-screen" class="hidden">
+  <div>
+    <div class="maintenance-icon">🛠️</div>
+    <div class="maintenance-title">Under Maintenance</div>
+    <div class="maintenance-text">We're making some updates to improve your experience. The dashboard will be back shortly — thanks for your patience.</div>
+    <div class="nance-brand">Porter Airlines Canada Limited · Technical Operations</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
      INTRO VIDEO (plays once on every page load, before login)
 ══════════════════════════════════════════════════ -->
 <div id="intro-screen">
@@ -1513,6 +1532,18 @@
 <div class="toast-container" id="toast-container"></div>
 
 <script>
+// ════════════════════════════════════════════
+// 🔧 MAINTENANCE MODE
+// Set to true, commit, and push to instantly show an "Under Maintenance"
+// screen to everyone and block access to the rest of the site. Set back to
+// false and push again to restore normal access. Nothing else needs to change.
+// ════════════════════════════════════════════
+const MAINTENANCE_MODE = true;
+
+if (MAINTENANCE_MODE) {
+  document.getElementById('maintenance-screen').classList.remove('hidden');
+}
+
 // STATION CONFIG
 // Airport code -> city name, used to show a friendly name next to the route
 // (e.g. "YYZ→YOW  Ottawa"). The live feed only ever gives us airport codes,
@@ -1695,6 +1726,8 @@ function doLogout() {
   activeChatChannel = 'station';
   chatMessagesCache = { station: {}, global: {} };
   typingCache = { station: {}, global: {} };
+  chatStationListenerFor = null;
+  chatTypingStationListenerFor = null;
   document.querySelectorAll('.chat-channel-tab').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.channel === 'station');
   });
@@ -2014,17 +2047,20 @@ function chatChannelKey(channel) {
 // Messages older than this are dropped from the channel entirely.
 const MESSAGE_TTL_MS = 48 * 60 * 60 * 1000; // 48 hours
 
-// Splits a raw {key: message} object into { fresh, expired }. Any client that
-// notices an expired message deletes it from Firebase, so it disappears for
-// everyone within moments of crossing 48 hours — no server-side job needed.
-function pruneExpiredMessages(channel, rawMessages) {
+// Splits a raw {key: message} object, deleting anything past the TTL from
+// Firebase as it's found. Takes the already-resolved path segment (e.g. 'YYZ'
+// or 'GLOBAL') rather than re-deriving it from the live currentStation —
+// this function can run from inside an async snapshot callback that fires
+// after the station has already changed (e.g. switching accounts), so
+// re-reading a mutable global at that point would target the wrong path.
+function pruneExpiredMessages(pathKey, rawMessages) {
   const now = Date.now();
   const fresh = {};
   Object.keys(rawMessages || {}).forEach(key => {
     const m = rawMessages[key];
     if (m && m.timestamp && now - m.timestamp > MESSAGE_TTL_MS) {
       if (firebaseDb) {
-        const msgRef = window.firebaseRef(firebaseDb, 'chat_messages/' + chatChannelKey(channel) + '/' + key);
+        const msgRef = window.firebaseRef(firebaseDb, 'chat_messages/' + pathKey + '/' + key);
         window.firebaseSet(msgRef, null).catch(() => {});
       }
     } else {
@@ -2038,9 +2074,10 @@ function pruneExpiredMessages(channel, rawMessages) {
 // snapshot fires (i.e. someone sends a new message). In a quiet channel, a
 // message could sit past 48h with nothing to trigger a re-check — this catches that.
 function sweepExpiredChatMessages() {
-  ['station', 'global'].forEach(channel => {
+  const stationPath = chatStationListenerFor || currentStation; // whichever station the cache actually reflects
+  [['station', stationPath], ['global', 'GLOBAL']].forEach(([channel, pathKey]) => {
     const before = Object.keys(chatMessagesCache[channel] || {}).length;
-    chatMessagesCache[channel] = pruneExpiredMessages(channel, chatMessagesCache[channel]);
+    chatMessagesCache[channel] = pruneExpiredMessages(pathKey, chatMessagesCache[channel]);
     const after = Object.keys(chatMessagesCache[channel] || {}).length;
     if (before !== after) {
       updateChatChannelCounts();
@@ -2074,9 +2111,9 @@ function startChatListener() {
 
 function startChatGlobalListener() {
   if (!firebaseDb || chatListenerGlobal) return; // global channel never changes — subscribe once only
-  const globalRef = window.firebaseRef(firebaseDb, 'chat_messages/' + chatChannelKey('global'));
+  const globalRef = window.firebaseRef(firebaseDb, 'chat_messages/GLOBAL');
   chatListenerGlobal = window.firebaseOnValue(globalRef, (snapshot) => {
-    chatMessagesCache.global = pruneExpiredMessages('global', snapshot.val() || {});
+    chatMessagesCache.global = pruneExpiredMessages('GLOBAL', snapshot.val() || {});
     updateChatChannelCounts();
     if (activeChatChannel === 'global') renderChat();
   }, (err) => {
@@ -2097,9 +2134,13 @@ function startChatStationListener() {
   chatMessagesCache.station = {}; // clear the old station's messages immediately, don't wait for the new snapshot
   if (document.getElementById('page-chat') && document.getElementById('page-chat').classList.contains('active')) renderChat();
 
-  const stationRef = window.firebaseRef(firebaseDb, 'chat_messages/' + chatChannelKey('station'));
+  const stationRef = window.firebaseRef(firebaseDb, 'chat_messages/' + station);
   chatListenerStation = window.firebaseOnValue(stationRef, (snapshot) => {
-    chatMessagesCache.station = pruneExpiredMessages('station', snapshot.val() || {});
+    // If a newer subscription has since taken over (e.g. rapid account
+    // switching), ignore this now-stale listener's event entirely rather
+    // than letting it overwrite the correct, current station's cache.
+    if (chatStationListenerFor !== station) return;
+    chatMessagesCache.station = pruneExpiredMessages(station, snapshot.val() || {});
     updateChatChannelCounts();
     if (activeChatChannel === 'station') renderChat();
   }, (err) => {
@@ -2260,7 +2301,7 @@ function startChatTypingGlobalListener() {
   if (!firebaseDb || chatTypingGlobalListenerStarted) return;
   chatTypingGlobalListenerStarted = true;
 
-  const globalRef = window.firebaseRef(firebaseDb, 'chat_typing/' + chatChannelKey('global'));
+  const globalRef = window.firebaseRef(firebaseDb, 'chat_typing/GLOBAL');
   window.firebaseOnValue(globalRef, (snapshot) => {
     typingCache.global = snapshot.val() || {};
     if (activeChatChannel === 'global') renderTypingIndicator();
@@ -2274,6 +2315,8 @@ function startChatTypingGlobalListener() {
   }
 }
 
+let typingListenerStationUnsub = null;
+
 function startChatTypingStationListener() {
   if (!firebaseDb || !firebaseAuthenticated) {
     setTimeout(startChatTypingStationListener, 200);
@@ -2282,11 +2325,13 @@ function startChatTypingStationListener() {
   const station = currentStation;
   if (chatTypingStationListenerFor === station) return; // already correctly attached
 
+  if (typeof typingListenerStationUnsub === 'function') typingListenerStationUnsub(); // detach the previous station's listener
   chatTypingStationListenerFor = station;
   typingCache.station = {}; // clear the previous station's typing state immediately
 
-  const stationRef = window.firebaseRef(firebaseDb, 'chat_typing/' + chatChannelKey('station'));
-  window.firebaseOnValue(stationRef, (snapshot) => {
+  const stationRef = window.firebaseRef(firebaseDb, 'chat_typing/' + station);
+  typingListenerStationUnsub = window.firebaseOnValue(stationRef, (snapshot) => {
+    if (chatTypingStationListenerFor !== station) return; // a newer subscription has since taken over
     typingCache.station = snapshot.val() || {};
     if (activeChatChannel === 'station') renderTypingIndicator();
   });
