@@ -23,7 +23,7 @@ import google.auth.transport.requests
 
 # ── CONFIG ──────────────────────────────────────────────────────────────────
 FIREBASE_DB_URL = "https://yyz-stores-1a98f-default-rtdb.firebaseio.com"
-SHEET_ID        = os.environ["GOOGLE_SHEET_ID"]   # same sheet sync_flights.py uses
+SHEET_ID        = os.environ["1rJDB_S7xw4Mg-3Z1lYkiV9-oJzUqRmC_kAq_AldWP4c"]   # same sheet sync_flights.py uses
 SHEET_TAB       = "COMAT"                          # separate tab, doesn't touch "Flights"
 
 # Credentials for reading Firebase (separate from the Sheets credentials below —
