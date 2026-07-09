@@ -13,7 +13,7 @@
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
   import { getDatabase, ref, set, onValue, get } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
-  import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserSessionPersistence } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyCZKQxPg1RnGK7nTwFU1nB2zDOLzDw12Yk",
@@ -30,6 +30,13 @@
   const db = getDatabase(app);
   const auth = getAuth(app);
 
+  // Match Firebase's own session persistence to the app's existing
+  // auto-logout-on-close behavior (sessionStorage) — closing the browser
+  // clears both, refreshing the page keeps both.
+  setPersistence(auth, browserSessionPersistence).catch(err => {
+    console.error('Failed to set auth persistence:', err);
+  });
+
   window.firebaseApp = app;
   window.firebaseDb = db;
   window.firebaseAuth = auth;
@@ -37,7 +44,7 @@
   window.firebaseSet = set;
   window.firebaseOnValue = onValue;
   window.firebaseGet = get;
-  window.firebaseSignInAnonymously = signInAnonymously;
+  window.firebaseSignInWithEmailAndPassword = signInWithEmailAndPassword;
   window.firebaseOnAuthStateChanged = onAuthStateChanged;
   window.firebaseSignOut = signOut;
 </script>
@@ -1038,7 +1045,7 @@
     <div class="maintenance-icon">🛠️</div>
     <div class="maintenance-title">Under Maintenance</div>
     <div class="maintenance-text">We're making some updates to improve your experience. The dashboard will be back shortly — thanks for your patience.</div>
-    <div class="nance-brand">Porter Airlines Canada Limited · Technical Operations</div>
+    <div class="maintenance-brand">Porter Airlines · Technical Operations</div>
   </div>
 </div>
 
@@ -1086,13 +1093,13 @@
       <input class="login-input" type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" onkeydown="loginKeydown(event)">
     </div>
 
-    <button class="login-btn" onclick="doLogin()">
+    <button class="login-btn" id="login-btn" onclick="doLogin()">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M6 2H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3" stroke-linecap="round"/>
         <path d="M10 10l3-2.5L10 5" stroke-linecap="round" stroke-linejoin="round"/>
         <line x1="7" y1="7.5" x2="13" y2="7.5" stroke-linecap="round"/>
       </svg>
-      Sign In
+      <span id="login-btn-label">Sign In</span>
     </button>
 
     <div class="login-footer">
@@ -1538,7 +1545,7 @@
 // screen to everyone and block access to the rest of the site. Set back to
 // false and push again to restore normal access. Nothing else needs to change.
 // ════════════════════════════════════════════
-const MAINTENANCE_MODE = true;
+const MAINTENANCE_MODE = false;
 
 if (MAINTENANCE_MODE) {
   document.getElementById('maintenance-screen').classList.remove('hidden');
@@ -1572,20 +1579,28 @@ const STATIONS = {
 };
 
 // USER ACCOUNTS
+// Passwords are NOT stored here anymore — actual authentication happens
+// through Firebase Auth (see doLogin), so this table only maps each login's
+// username to its app-level role/station config. None of this is sensitive;
+// it's just describing what each account can see, not how to get in as one.
+// AUTH_EMAIL_DOMAIN is a fixed placeholder — Firebase Auth requires an
+// email-shaped identifier, but nothing is ever actually emailed to it.
+const AUTH_EMAIL_DOMAIN = 'portercomat.internal';
+
 // Station accounts (requiresProfile: true) are shared logins — after signing in,
 // staff pick or create their own profile from the roster stored for that station.
 // Utility accounts (admin/techops/tvdisplay) skip profile selection.
 // The Supervisor account uses the special "ALL" station, which isn't scoped to
 // any single base — it sees combined flights/COMAT from every station at once.
 const USERS = [
-  { username: 'yyz.stores', password: 'Port1!', station: 'YYZ', role: 'Stores', requiresProfile: true },
-  { username: 'ytz.stores', password: 'MrPorter1!', station: 'YTZ', role: 'Stores', requiresProfile: true },
-  { username: 'yhz.stores', password: 'HALIFAX@1', station: 'YHZ', role: 'Stores', requiresProfile: true },
-  { username: 'yow.stores', password: 'OTTAWA1!', station: 'YOW', role: 'Stores', requiresProfile: true },
-  { username: 'admin',     password: 'Port1!',    display: 'Admin',      role: 'Admin',    station: 'YYZ' },
-  { username: 'techops',   password: 'techops1',  display: 'Tech Ops',   role: 'Tech Ops', station: 'YYZ' },
-  { username: 'tvdisplay', password: 'tvdisplay', display: 'TV Display', role: 'Display',  station: 'YYZ' },
-  { username: 'supervisor', password: 'Supervisor2024!', station: 'ALL', role: 'Supervisor', requiresProfile: true },
+  { username: 'yyz.stores', station: 'YYZ', role: 'Stores', requiresProfile: true },
+  { username: 'ytz.stores', station: 'YTZ', role: 'Stores', requiresProfile: true },
+  { username: 'yhz.stores', station: 'YHZ', role: 'Stores', requiresProfile: true },
+  { username: 'yow.stores', station: 'YOW', role: 'Stores', requiresProfile: true },
+  { username: 'admin',     display: 'Admin',      role: 'Admin',    station: 'YYZ' },
+  { username: 'techops',   display: 'Tech Ops',   role: 'Tech Ops', station: 'YYZ' },
+  { username: 'tvdisplay', display: 'TV Display', role: 'Display',  station: 'YYZ' },
+  { username: 'supervisor', station: 'ALL', role: 'Supervisor', requiresProfile: true },
 ];
 
 // LOGIN
@@ -1658,24 +1673,57 @@ function isFlightInbound(f) {
   return f.origin !== currentStation;
 }
 
-function doLogin() {
+async function doLogin() {
   const u = document.getElementById('login-username').value.trim().toLowerCase();
   const p = document.getElementById('login-password').value;
-  const user = USERS.find(x => x.username === u && x.password === p);
   const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
 
-  if (!user) {
+  const user = USERS.find(x => x.username === u);
+  errEl.classList.remove('show');
+
+  if (!u || !p) {
+    errEl.textContent = 'Please enter a username and password.';
     errEl.classList.add('show');
-    document.getElementById('login-password').value = '';
     return;
   }
 
-  errEl.classList.remove('show');
+  if (!window.firebaseAuth || !window.firebaseSignInWithEmailAndPassword) {
+    errEl.textContent = 'Still connecting — please try again in a moment.';
+    errEl.classList.add('show');
+    return;
+  }
 
-  if (user.requiresProfile) {
-    showProfileScreen(user);
-  } else {
-    completeLogin(user, null);
+  if (btn) { btn.disabled = true; document.getElementById('login-btn-label').textContent = 'Signing in...'; }
+
+  try {
+    // The actual password check happens on Firebase's servers, not in this
+    // code — the username is just mapped to a fixed placeholder email
+    // address so it fits Firebase Auth's required format.
+    await window.firebaseSignInWithEmailAndPassword(window.firebaseAuth, `${u}@${AUTH_EMAIL_DOMAIN}`, p);
+
+    if (!user) {
+      // Credentials were valid but this username has no app-level role
+      // configured — shouldn't normally happen if accounts were set up
+      // correctly, but fail safely rather than let someone in with no role.
+      errEl.textContent = 'This account has no role configured. Contact an admin.';
+      errEl.classList.add('show');
+      window.firebaseSignOut(window.firebaseAuth).catch(() => {});
+      return;
+    }
+
+    if (user.requiresProfile) {
+      showProfileScreen(user);
+    } else {
+      completeLogin(user, null);
+    }
+  } catch (err) {
+    console.error('Login failed:', err.code || err);
+    errEl.textContent = 'Incorrect username or password.';
+    errEl.classList.add('show');
+    document.getElementById('login-password').value = '';
+  } finally {
+    if (btn) { btn.disabled = false; document.getElementById('login-btn-label').textContent = 'Sign In'; }
   }
 }
 
@@ -1933,7 +1981,7 @@ let firebaseCoreStarted = false;
 function initFirebase() {
   if (firebaseCoreStarted) return;
   // Firebase is now initialized in the module script above
-  if (window.firebaseDb && window.firebaseAuth && window.firebaseSignInAnonymously && window.firebaseOnAuthStateChanged) {
+  if (window.firebaseDb && window.firebaseAuth && window.firebaseSignInWithEmailAndPassword && window.firebaseOnAuthStateChanged) {
     firebaseCoreStarted = true;
     firebaseDb = window.firebaseDb;
     firebaseAuth = window.firebaseAuth;
@@ -1958,12 +2006,10 @@ function initFirebase() {
         startChatTypingGlobalListener();
         startChatTypingStationListener();
       } else {
+        // No auto-anonymous-signin anymore — the app only authenticates when
+        // someone actually signs in with a real username/password via doLogin().
         firebaseAuthenticated = false;
-        console.log('Firebase auth required; signing in anonymously...');
-        window.firebaseSignInAnonymously(firebaseAuth).catch(err => {
-          console.error('Firebase auth sign-in failed:', err);
-          updateSyncBanner('error', 'Firebase auth failed — local mode');
-        });
+        console.log('No active Firebase session — waiting for login.');
       }
     });
   } else {
