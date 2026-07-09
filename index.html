@@ -692,36 +692,7 @@
   .fd-line { position: relative; height: 2px; background: var(--border); border-radius: 2px; }
   .fd-line-fill { position: absolute; top: 0; left: 0; height: 2px; background: var(--porter-green); border-radius: 2px; transition: width 0.4s ease; }
   .fd-plane { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: 17px; color: var(--porter-green); transition: left 0.4s ease; filter: drop-shadow(0 0 4px rgba(0,0,0,0.4)); }
-  .fd-legs { display: flex; flex-direction: column; gap: 16px; }
-
-  /* FLIGHT DETAIL MODAL — two-column layout (info left, map right) */
-  .fd-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
-  @media (max-width: 640px) { .fd-columns { grid-template-columns: 1fr; } }
-  .fd-col-right { position: sticky; top: 0; }
-  .fd-map-panel {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px;
-  }
-  .fd-map-caption {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 10px;
-    font-size: 11px;
-    color: var(--text-secondary);
-  }
-  .fd-map-unavailable {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 220px;
-    color: var(--text-secondary);
-    font-size: 12.5px;
-    text-align: center;
-    padding: 0 20px;
-  }
+  .fd-legs { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   .fd-leg-city { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 1px; }
   .fd-leg-date { font-size: 11.5px; color: var(--text-secondary); margin-bottom: 12px; }
   .fd-leg-label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
@@ -1533,7 +1504,7 @@
 
 <!-- FLIGHT DETAIL MODAL -->
 <div class="modal-overlay" id="flight-detail-modal">
-  <div class="modal" style="max-width:900px">
+  <div class="modal" style="max-width:640px">
     <div class="modal-header">
       <div class="modal-title" id="flight-detail-title">Flight Details</div>
       <button class="modal-close" onclick="closeModal('flight-detail-modal')">×</button>
@@ -1597,24 +1568,6 @@ const AIRPORT_NAMES = {
   ABE: 'Allentown', PBI: 'West Palm Beach', MYR: 'Myrtle Beach',
   RSW: 'Fort Myers', SAV: 'Savannah', RIC: 'Richmond',
   NAS: 'Nassau', PUJ: 'Punta Cana', TPE: 'Taipei',
-};
-
-// Approximate airport coordinates [lat, lon], used only to draw a stylized,
-// approximate route map in the flight detail modal — NOT live GPS tracking.
-// Add more codes here as needed; a route falls back to a text-only view if
-// either endpoint isn't listed.
-const AIRPORT_COORDS = {
-  YYZ: [43.6777, -79.6248], YTZ: [43.6275, -79.3962], YOW: [45.3225, -75.6692], YHZ: [44.8808, -63.5086],
-  YUL: [45.4706, -73.7408], YWG: [49.9100, -97.2399], YYC: [51.1315, -114.0106], YEG: [53.3097, -113.5792],
-  YVR: [49.1967, -123.1815], YYT: [47.6186, -52.7519], YQB: [46.7911, -71.3933], YFC: [45.8690, -66.5372],
-  YSJ: [45.3161, -65.8903], YQM: [46.1122, -64.6786], YXU: [43.0356, -81.1539], YQG: [42.2755, -82.9556],
-  YTS: [48.5697, -81.3767], YQT: [48.3719, -89.3239], YSB: [46.6250, -80.7994],
-  JFK: [40.6413, -73.7781], EWR: [40.6895, -74.1745], BOS: [42.3656, -71.0096], ORD: [41.9742, -87.9073],
-  MIA: [25.7959, -80.2870], MCO: [28.4312, -81.3081], TPA: [27.9755, -82.5332], FLL: [26.0742, -80.1506],
-  LAS: [36.0840, -115.1537], LAX: [33.9416, -118.4085], SFO: [37.6213, -122.3790],
-  IAD: [38.9531, -77.4565], DCA: [38.8512, -77.0402], PHL: [39.8744, -75.2424], ABE: [40.6521, -75.4408],
-  PBI: [26.6832, -80.0956], MYR: [33.6797, -78.9283], RSW: [26.5362, -81.7552], SAV: [32.1276, -81.2021],
-  RIC: [37.5052, -77.3197], NAS: [25.0480, -77.4658], PUJ: [18.5674, -68.3634], TPE: [25.0777, -121.2328],
 };
 
 const STATIONS = {
@@ -2985,65 +2938,6 @@ function computeFlightProgress(dep, arr) {
   return { pct, phase, phaseLabel, durationText };
 }
 
-// Builds a small, self-contained SVG "map" showing an approximate route
-// between two airports — projected from real coordinates, but this is NOT
-// live GPS tracking. The plane's position along the curve uses the same
-// progress percentage as the linear diagram, so both stay consistent.
-function renderRouteMapSVG(originCode, destCode, progressPct) {
-  const o = AIRPORT_COORDS[originCode];
-  const d = AIRPORT_COORDS[destCode];
-  if (!o || !d) return null;
-
-  const W = 320, H = 240, PAD = 36;
-  const latSpread = Math.max(Math.abs(o[0] - d[0]), 6);
-  const lonSpread = Math.max(Math.abs(o[1] - d[1]), 6);
-  const minLat = Math.min(o[0], d[0]) - latSpread * 0.35;
-  const maxLat = Math.max(o[0], d[0]) + latSpread * 0.35;
-  const minLon = Math.min(o[1], d[1]) - lonSpread * 0.35;
-  const maxLon = Math.max(o[1], d[1]) + lonSpread * 0.35;
-
-  const project = (pt) => [
-    PAD + ((pt[1] - minLon) / (maxLon - minLon)) * (W - PAD * 2),
-    PAD + ((maxLat - pt[0]) / (maxLat - minLat)) * (H - PAD * 2),
-  ];
-
-  const [ox, oy] = project(o);
-  const [dx, dy] = project(d);
-  const mx = (ox + dx) / 2;
-  const my = (oy + dy) / 2 - Math.min(28, Math.abs(dx - ox) * 0.18) - 10;
-
-  const t = Math.max(0, Math.min(1, progressPct / 100));
-  const px = (1 - t) * (1 - t) * ox + 2 * (1 - t) * t * mx + t * t * dx;
-  const py = (1 - t) * (1 - t) * oy + 2 * (1 - t) * t * my + t * t * dy;
-  const heading = Math.atan2(dy - oy, dx - ox) * 180 / Math.PI + 90;
-
-  let grid = '';
-  for (let i = 1; i < 6; i++) {
-    const gx = PAD + (i / 6) * (W - PAD * 2);
-    const gy = (i / 5) * H;
-    grid += `<line x1="${gx.toFixed(1)}" y1="0" x2="${gx.toFixed(1)}" y2="${H}" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>`;
-    grid += `<line x1="0" y1="${gy.toFixed(1)}" x2="${W}" y2="${gy.toFixed(1)}" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>`;
-  }
-
-  return `
-    <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" style="display:block;">
-      <rect x="0" y="0" width="${W}" height="${H}" rx="8" fill="rgba(255,255,255,0.015)"/>
-      ${grid}
-      <path d="M ${ox.toFixed(1)} ${oy.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${dx.toFixed(1)} ${dy.toFixed(1)}"
-            fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="2" stroke-dasharray="3 4"/>
-      <path d="M ${ox.toFixed(1)} ${oy.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${px.toFixed(1)} ${py.toFixed(1)}"
-            fill="none" stroke="var(--porter-green)" stroke-width="2.5"/>
-      <circle cx="${ox.toFixed(1)}" cy="${oy.toFixed(1)}" r="5" fill="var(--porter-teal)" stroke="#0c1120" stroke-width="2"/>
-      <circle cx="${dx.toFixed(1)}" cy="${dy.toFixed(1)}" r="5" fill="var(--porter-teal)" stroke="#0c1120" stroke-width="2"/>
-      <text x="${ox.toFixed(1)}" y="${(oy - 12).toFixed(1)}" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700" font-family="var(--font-mono)">${originCode}</text>
-      <text x="${dx.toFixed(1)}" y="${(dy - 12).toFixed(1)}" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700" font-family="var(--font-mono)">${destCode}</text>
-      <g transform="translate(${px.toFixed(1)},${py.toFixed(1)}) rotate(${heading.toFixed(1)})">
-        <text text-anchor="middle" dominant-baseline="middle" font-size="17" fill="var(--porter-green)" style="filter:drop-shadow(0 0 3px rgba(0,0,0,0.5));">✈</text>
-      </g>
-    </svg>
-  `;
-}
-
 function renderFlightLegBlock(leg, label, city, code) {
   if (!leg || !leg.std) {
     return `
@@ -3099,8 +2993,6 @@ function openFlightDetailModal(id) {
 
   const phaseColor = { scheduled: 'var(--porter-teal)', boarding: 'var(--porter-gold)', enroute: 'var(--porter-green)', landed: 'var(--text-secondary)' }[progress.phase];
 
-  const mapSVG = renderRouteMapSVG(f.origin, f.dest, progress.pct);
-
   document.getElementById('flight-detail-body').innerHTML = `
     <div class="fd-status-row">
       <span class="badge" style="background:rgba(255,255,255,0.06); color:${phaseColor}; border:1px solid ${phaseColor};">● ${progress.phaseLabel}</span>
@@ -3108,53 +3000,39 @@ function openFlightDetailModal(id) {
       ${f.gate ? `<span style="font-size:15px; font-weight:700; color:#ffffff; font-family:var(--font-mono);">✈ ${f.aircraft || f.tail || '–'}</span>` : ''}
     </div>
 
-    <div class="fd-columns">
-      <div class="fd-col-left">
-        <div class="fd-diagram">
-          <div class="fd-code">${f.origin}</div>
-          <div class="fd-line-wrap">
-            ${progress.durationText ? `<div class="fd-duration">${progress.durationText}</div>` : ''}
-            <div class="fd-line">
-              <div class="fd-line-fill" style="width:${progress.pct}%"></div>
-              <div class="fd-plane" style="left:${progress.pct}%">✈</div>
-            </div>
-          </div>
-          <div class="fd-code">${f.dest}</div>
-        </div>
-
-        <div class="fd-legs">
-          ${renderFlightLegBlock(dep, 'Scheduled departure', originCity, f.origin)}
-          ${renderFlightLegBlock(arr, 'Scheduled arrival', destCity, f.dest)}
-        </div>
-
-        ${comatItems.length ? `
-        <div class="fd-comat-section">
-          <div class="fd-comat-heading">📦 COMAT on this Flight (${comatItems.length})</div>
-          <div class="fd-comat-list">
-            ${comatItems.map(c => `
-              <div class="fd-comat-chip ${c.status === 'completed' ? 'completed' : (c.description === 'AOG' ? 'aog' : '')}" onclick="closeModal('flight-detail-modal'); openDetailModal('${c.id}');">
-                <div class="fd-comat-chip-top">
-                  <span class="fd-comat-order">${escapeHtml(c.orderNumber || 'No Order #')}</span>
-                  ${c.status === 'completed' ? '<span class="fd-comat-badge done">✓ Received</span>' : c.description === 'AOG' ? '<span class="fd-comat-badge aog">🚨 AOG</span>' : '<span class="fd-comat-badge pending">● Pending</span>'}
-                </div>
-                <div class="fd-comat-desc">${escapeHtml(c.description || '')}</div>
-                <div class="fd-comat-meta">${c.quantity} pc${c.quantity > 1 ? 's' : ''} · ${escapeHtml(c.partNumber || '—')}</div>
-              </div>
-            `).join('')}
-          </div>
-        </div>` : ''}
-      </div>
-
-      <div class="fd-col-right">
-        <div class="fd-map-panel">
-          ${mapSVG ? mapSVG : `<div class="fd-map-unavailable">🗺️ Map not available for this route<br><span style="font-size:11px;">(missing coordinates for ${f.origin} or ${f.dest})</span></div>`}
-          <div class="fd-map-caption">
-            <span>Approximate route — not live GPS tracking</span>
-            <span>${progress.phaseLabel}</span>
-          </div>
+    <div class="fd-diagram">
+      <div class="fd-code">${f.origin}</div>
+      <div class="fd-line-wrap">
+        ${progress.durationText ? `<div class="fd-duration">${progress.durationText}</div>` : ''}
+        <div class="fd-line">
+          <div class="fd-line-fill" style="width:${progress.pct}%"></div>
+          <div class="fd-plane" style="left:${progress.pct}%">✈</div>
         </div>
       </div>
+      <div class="fd-code">${f.dest}</div>
     </div>
+
+    <div class="fd-legs">
+      ${renderFlightLegBlock(dep, 'Scheduled departure', originCity, f.origin)}
+      ${renderFlightLegBlock(arr, 'Scheduled arrival', destCity, f.dest)}
+    </div>
+
+    ${comatItems.length ? `
+    <div class="fd-comat-section">
+      <div class="fd-comat-heading">📦 COMAT on this Flight (${comatItems.length})</div>
+      <div class="fd-comat-list">
+        ${comatItems.map(c => `
+          <div class="fd-comat-chip ${c.status === 'completed' ? 'completed' : (c.description === 'AOG' ? 'aog' : '')}" onclick="closeModal('flight-detail-modal'); openDetailModal('${c.id}');">
+            <div class="fd-comat-chip-top">
+              <span class="fd-comat-order">${escapeHtml(c.orderNumber || 'No Order #')}</span>
+              ${c.status === 'completed' ? '<span class="fd-comat-badge done">✓ Received</span>' : c.description === 'AOG' ? '<span class="fd-comat-badge aog">🚨 AOG</span>' : '<span class="fd-comat-badge pending">● Pending</span>'}
+            </div>
+            <div class="fd-comat-desc">${escapeHtml(c.description || '')}</div>
+            <div class="fd-comat-meta">${c.quantity} pc${c.quantity > 1 ? 's' : ''} · ${escapeHtml(c.partNumber || '—')}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>` : ''}
 
     <div class="fd-footer">
       <span class="fd-footer-meta">Flight ${f.flight}${f.codeshare && f.codeshare !== '-' ? ` · Codeshare ${f.codeshare}` : ''}</span>
