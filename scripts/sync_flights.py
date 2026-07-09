@@ -1,11 +1,4 @@
-"""
-Porter Multi-Station Flight Sync
-Fetches live flight data from radar.flyporter.com and writes it to a Google Sheet.
-Filters to flights touching one of our home stations, and — for any flight that
-touches more than one of them (e.g. YYZ<->YOW) — writes one row PER station,
-each carrying the gate/status/time relevant to that station's side of the leg.
-Run manually or via GitHub Actions on a schedule.
-"""
+
 
 import os
 import json
