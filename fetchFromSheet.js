@@ -1,26 +1,39 @@
+// ════════════════════════════════════════════════════════
+// LIVE FLIGHT LOADER — reads from published Google Sheet CSV
+// Replace SHEET_ID below with your actual Google Sheet ID
+// Column order here must match HEADERS in scripts/sync_flights.py
+//
+// The sheet now holds rows for ALL home stations (YYZ, YTZ, YHZ, YOW).
+// A flight touching two of our stations (e.g. YYZ<->YOW) appears as TWO
+// rows — one per station — each with the gate/status/time relevant to
+// that station. Every flight object carries a `station` field, and the
+// dashboard (index.html) filters to whichever station the logged-in
+// user belongs to.
+// ════════════════════════════════════════════════════════
 
-
-const SHEET_ID      = "1rJDB_S7xw4Mg-3Z1lYkiV9-oJzUqRmC_kAq_AldWP4c";
+const SHEET_ID      = "1rJDB_S7xw4Mg-3Z1lYkiV9-oJzUqRmC_kAq_AldWP4c";   // paste your Sheet ID
 const SHEET_TAB      = "Flights";
-const REFRESH_MS      = 60_000;   //every 60 secs
+const REFRESH_MS      = 60_000;                        // poll every 60 seconds
 const SHEET_CSV_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_TAB)}`;
 
 // Column index map — matches HEADERS in sync_flights.py
 const COL = {
-  flight:    0,   // "Flight"
-  origin:    1,   // "Origin"
-  dest:      2,   // "Destination"
-  station:   3,   // "Station" (which home station this row belongs to)
-  direction: 4,   // "Direction" (ARRIVAL / DEPARTURE relative to Station)
-  scheduled: 5,   // "Scheduled Time"
-  estimated: 6,   // "Estimated Time"
-  status:    7,   // "Status"
-  gate:      8,   // "Gate"
-  tail:      9,   // "Tail Number"
-  codeshare: 10,  // "Codeshare"
-  updated:   11,  // "Last Updated (UTC)"
+  flightKey: 0,   // "Flight Key" (used by AppSheet to link COMAT to flights — not needed by the website itself)
+  flight:    1,   // "Flight"
+  origin:    2,   // "Origin"
+  dest:      3,   // "Destination"
+  station:   4,   // "Station" (which home station this row belongs to)
+  direction: 5,   // "Direction" (ARRIVAL / DEPARTURE relative to Station)
+  scheduled: 6,   // "Scheduled Time"
+  estimated: 7,   // "Estimated Time"
+  status:    8,   // "Status"
+  gate:      9,   // "Gate"
+  tail:      10,  // "Tail Number"
+  codeshare: 11,  // "Codeshare"
+  updated:   12,  // "Last Updated (UTC)"
 };
 
+// Simple CSV parser (handles quoted fields with commas inside)
 function parseCSV(text) {
   const lines = text.trim().split("\n");
   return lines.map(line => {
@@ -87,7 +100,7 @@ async function fetchLiveFlights() {
         status:    r[COL.status]    || "Scheduled",
         gate:      r[COL.gate]      || "-",
         tail:      r[COL.tail]      || "-",
-        aircraft:  r[COL.tail]      || "-",   // table's "Aircraft" column renders f.aircraft feed has no aircraft type, so show tail number here instead
+        aircraft:  r[COL.tail]      || "-",   // your table's "Aircraft" column renders f.aircraft — feed has no aircraft type, so show tail number here instead
         codeshare: r[COL.codeshare] || "-",
       };
     });
@@ -113,5 +126,5 @@ async function fetchLiveFlights() {
   }
 }
 
-fetchLiveFlights();                          
-setInterval(fetchLiveFlights, REFRESH_MS);   
+fetchLiveFlights();                          // run once immediately on load
+setInterval(fetchLiveFlights, REFRESH_MS);   // then keep refreshing every 60s
