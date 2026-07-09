@@ -17,7 +17,7 @@ from google.oauth2.service_account import Credentials
 
 # ── CONFIG ──────────────────────────────────────────────────────────────────
 PORTER_URL     = "https://radar.flyporter.com/flightinformation/get?nocache=true"
-SHEET_ID       = os.environ["1rJDB_S7xw4Mg-3Z1lYkiV9-oJzUqRmC_kAq_AldWP4c"]       # set in GitHub Actions secrets
+SHEET_ID       = os.environ["GOOGLE_SHEET_ID"]       # set in GitHub Actions secrets
 SHEET_TAB      = "Flights"                            # tab name inside the spreadsheet
 
 # All stations that get their own dashboard login. Add/remove airport codes here
