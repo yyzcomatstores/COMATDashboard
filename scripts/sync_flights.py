@@ -34,7 +34,7 @@ SCOPES = [
 ]
 
 HEADERS = [
-    "Flight Key",           # unique per (flight, station, date) — used by AppSheet to link COMAT rows to their flight
+    "Flight ID",            # unique per (flight, station, date) — used by AppSheet to link COMAT rows to their flight. Named differently from COMAT's "Flight Key" column on purpose — AppSheet auto-detects Ref relationships from matching column names, and two identically-named columns across tables can confuse that into pointing a table at itself.
     "Flight",
     "Origin",
     "Destination",
