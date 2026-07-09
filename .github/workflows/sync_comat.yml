@@ -1,0 +1,34 @@
+name: Sync Porter COMAT to Google Sheet
+
+on:
+  schedule:
+    # Runs every 5 minutes — COMAT/AOG items are time-sensitive, so this
+    # stays more frequent than the flight sync (every 15 min). Adjust freely.
+    - cron: "*/5 * * * *"
+
+  # Also allow manual runs from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Run COMAT sync
+        env:
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: python scripts/sync_comat.py
