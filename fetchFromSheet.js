@@ -18,7 +18,7 @@ const SHEET_CSV_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/
 
 // Column index map — matches HEADERS in sync_flights.py
 const COL = {
-  flightKey: 0,   // "Flight Key" (used by AppSheet to link COMAT to flights — not needed by the website itself)
+  flightKey: 0,   // "Flight ID" (used by AppSheet to link COMAT to flights — not needed by the website itself)
   flight:    1,   // "Flight"
   origin:    2,   // "Origin"
   dest:      3,   // "Destination"
