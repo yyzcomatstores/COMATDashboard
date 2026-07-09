@@ -1,4 +1,11 @@
-
+"""
+Porter Multi-Station Flight Sync
+Fetches live flight data from radar.flyporter.com and writes it to a Google Sheet.
+Filters to flights touching one of our home stations, and — for any flight that
+touches more than one of them (e.g. YYZ<->YOW) — writes one row PER station,
+each carrying the gate/status/time relevant to that station's side of the leg.
+Run manually or via GitHub Actions on a schedule.
+"""
 
 import os
 import json
@@ -27,6 +34,7 @@ SCOPES = [
 ]
 
 HEADERS = [
+    "Flight Key",           # unique per (flight, station, date) — used by AppSheet to link COMAT rows to their flight
     "Flight",
     "Origin",
     "Destination",
@@ -121,7 +129,17 @@ def fetch_flights():
                 scheduled  = get("scheduledDepartureTime")
                 estimated  = get("estimatedDepartureTime")
 
+            # NOTE ON THE JOIN KEY: this mirrors the id scheme the website builds
+            # client-side (FlightNumber_Station_Date), so AppSheet can match COMAT
+            # rows to flights. The date here comes from Porter's own flightDate
+            # field for reliability. In rare cases (a flight scheduled right at a
+            # midnight boundary), the website's browser-local date could differ by
+            # a day from this — if that ever happens, that one COMAT row just won't
+            # show a linked flight in AppSheet; it doesn't affect the website itself.
+            flight_key = f"{flight_num}_{station}_{flight_date}"
+
             rows.append([
+                flight_key,
                 flight_num,
                 origin,
                 dest,
@@ -137,7 +155,7 @@ def fetch_flights():
             ])
 
     # Sort by scheduled time so the sheet reads top-to-bottom chronologically
-    rows.sort(key=lambda r: r[5])
+    rows.sort(key=lambda r: r[6])
 
     return rows
 
@@ -149,13 +167,13 @@ def write_to_sheet(sheet, rows):
     sheet.clear()
     sheet.update(values=all_data, range_name="A1")  # keyword args avoid the deprecation warning
 
-    sheet.format("A1:L1", {
+    sheet.format("A1:M1", {
         "textFormat": {"bold": True},
         "backgroundColor": {"red": 0.2, "green": 0.2, "blue": 0.2},
     })
     per_station = {}
     for r in rows:
-        per_station[r[3]] = per_station.get(r[3], 0) + 1
+        per_station[r[4]] = per_station.get(r[4], 0) + 1
     summary = ", ".join(f"{k}:{v}" for k, v in sorted(per_station.items()))
     print(f"Wrote {len(rows)} rows ({summary}) to sheet '{SHEET_TAB}' at {datetime.now(timezone.utc).strftime('%H:%M UTC')}")
 
