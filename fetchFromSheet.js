@@ -18,19 +18,18 @@ const SHEET_CSV_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/
 
 // Column index map — matches HEADERS in sync_flights.py
 const COL = {
-  flightKey: 0,   // "Flight ID" (used by AppSheet to link COMAT to flights — not needed by the website itself)
-  flight:    1,   // "Flight"
-  origin:    2,   // "Origin"
-  dest:      3,   // "Destination"
-  station:   4,   // "Station" (which home station this row belongs to)
-  direction: 5,   // "Direction" (ARRIVAL / DEPARTURE relative to Station)
-  scheduled: 6,   // "Scheduled Time"
-  estimated: 7,   // "Estimated Time"
-  status:    8,   // "Status"
-  gate:      9,   // "Gate"
-  tail:      10,  // "Tail Number"
-  codeshare: 11,  // "Codeshare"
-  updated:   12,  // "Last Updated (UTC)"
+  flight:    0,   // "Flight"
+  origin:    1,   // "Origin"
+  dest:      2,   // "Destination"
+  station:   3,   // "Station" (which home station this row belongs to)
+  direction: 4,   // "Direction" (ARRIVAL / DEPARTURE relative to Station)
+  scheduled: 5,   // "Scheduled Time"
+  estimated: 6,   // "Estimated Time"
+  status:    7,   // "Status"
+  gate:      8,   // "Gate"
+  tail:      9,   // "Tail Number"
+  codeshare: 10,  // "Codeshare"
+  updated:   11,  // "Last Updated (UTC)"
 };
 
 // Simple CSV parser (handles quoted fields with commas inside)
