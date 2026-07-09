@@ -12,7 +12,7 @@
 <!-- Firebase v9 -->
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-  import { getDatabase, ref, set, onValue, get } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
+  import { getDatabase, ref, set, onValue, get, runTransaction } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
   import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserSessionPersistence } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
 
   const firebaseConfig = {
@@ -44,15 +44,16 @@
   window.firebaseSet = set;
   window.firebaseOnValue = onValue;
   window.firebaseGet = get;
+  window.firebaseRunTransaction = runTransaction;
   window.firebaseSignInWithEmailAndPassword = signInWithEmailAndPassword;
   window.firebaseOnAuthStateChanged = onAuthStateChanged;
   window.firebaseSignOut = signOut;
 </script>
 <style>
   :root {
-    --porter-navy: #2b4f83;
-    --porter-deep: #1d3c6b;
-    --porter-teal: #32578c;
+    --porter-navy: #0e1c3a;
+    --porter-deep: #091225;
+    --porter-teal: #cbd5e1;
     --porter-textcolor1: #5b8def;
     --porter-teal-dim: rgba(203,213,225,0.15);
     --porter-teal-border: rgba(203,213,225,0.35);
@@ -566,7 +567,8 @@
   .badge-outbound  { background: rgba(240,180,41,0.15); color: var(--porter-gold); }
   .badge-inbound   { background: rgba(203,213,225,0.15);  color: var(--porter-teal); }
   .badge-completed { background: rgba(46,204,138,0.15); color: var(--porter-green); }
-  .badge-departed  { background: rgba(232,65,62,0.15);  color: var(--porter-red); }
+  .badge-departed  { background: rgba(46,204,138,0.15);  color: var(--porter-green); border: 1px solid rgba(46,204,138,0.35); }
+  .badge-cancelled { background: rgba(139,147,168,0.15); color: var(--text-secondary); border: 1px solid rgba(139,147,168,0.3); }
   .badge-scheduled { background: rgba(139,147,168,0.12); color: var(--text-secondary); }
   .badge-loading  { background: rgba(240,180,41,0.15); color: var(--porter-gold); }
   .badge-unloading { background: rgba(203,213,225,0.15); color: var(--porter-teal); border: 1px solid rgba(203,213,225,0.35); }
@@ -1352,6 +1354,7 @@
         <thead>
           <tr>
             <th class="station-col" style="display:none;">Station</th>
+            <th>Tracking #</th>
             <th>Flight</th>
             <th>Route</th>
             <th>Order #</th>
@@ -1434,7 +1437,7 @@
 
     <div style="display:flex; gap:12px; justify-content:flex-end;">
       <button class="btn btn-ghost" onclick="clearForm()">Clear</button>
-      <button class="btn btn-primary" onclick="addComat()">
+      <button class="btn btn-primary" id="comat-add-btn" onclick="addComat()">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="7" y1="2" x2="7" y2="12" stroke-linecap="round"/>
           <line x1="2" y1="7" x2="12" y2="7" stroke-linecap="round"/>
@@ -1967,6 +1970,29 @@ function getFlights() {
 function getComat() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY_COMAT)) || []; }
   catch { return []; }
+}
+
+// PACKAGE TRACKING NUMBERS (PDT1, PDT2, PDT3...)
+// Uses a Firebase transaction so two people adding COMAT at the same instant
+// from different stations can never end up with the same number.
+const TRACKING_COUNTER_FALLBACK_KEY = 'porter_tracking_counter'; // localStorage fallback only
+
+async function getNextTrackingNumber() {
+  if (firebaseDb && window.firebaseRunTransaction) {
+    try {
+      const counterRef = window.firebaseRef(firebaseDb, 'comat_counter');
+      const result = await window.firebaseRunTransaction(counterRef, (current) => (current || 0) + 1);
+      const n = result.snapshot.val();
+      if (n) return 'PDT' + n;
+    } catch (err) {
+      console.error('Tracking number transaction failed, falling back to local counter:', err);
+    }
+  }
+  // Local-only fallback (offline / Firebase unavailable) — not guaranteed
+  // collision-free across devices, but keeps the app usable.
+  const n = parseInt(localStorage.getItem(TRACKING_COUNTER_FALLBACK_KEY) || '0', 10) + 1;
+  localStorage.setItem(TRACKING_COUNTER_FALLBACK_KEY, String(n));
+  return 'PDT' + n;
 }
 
 // FIREBASE DATA SYNC
@@ -2765,7 +2791,7 @@ function renderFlights() {
   const delayed = dateFiltered.filter(f => f.status === 'Delayed').length;
   const stats = [
     { label:'Total Flights', value: dateFiltered.length, cls:'' },
-    { label:'Departed/Arrived', value: dateFiltered.filter(f=>f.status==='Departed'||f.status==='Arrived').length, cls:'red' },
+    { label:'Departed/Arrived', value: dateFiltered.filter(f=>f.status==='Departed'||f.status==='Arrived').length, cls:'green' },
     { label:'Loading/Arriving', value: dateFiltered.filter(f=>f.status==='Loading'||f.status==='Arriving'||f.status==='Unloading').length, cls:'gold' },
     { label:'Scheduled', value: dateFiltered.filter(f=>f.status==='Scheduled').length, cls:'teal' },
     { label:'Delayed',   value: delayed, cls: delayed > 0 ? 'red' : '' },
@@ -2801,12 +2827,12 @@ function renderFlights() {
     } else {
       statusBadge = {
         'Departed':  '<span class="badge badge-departed">Departed</span>',
-        'Arrived':   '<span class="badge badge-inbound">Arrived</span>',
+        'Arrived':   '<span class="badge badge-departed">Arrived</span>',
         'Loading':   '<span class="badge badge-loading">Loading</span>',
         'Arriving':  '<span class="badge badge-unloading">✈ Arriving</span>',
         'Unloading': '<span class="badge badge-unloading">⬇ Unloading</span>',
         'Scheduled': '<span class="badge badge-scheduled">Scheduled</span>',
-        'Cancelled': '<span class="badge badge-departed">Cancelled</span>',
+        'Cancelled': '<span class="badge badge-cancelled">Cancelled</span>',
       }[f.status] || `<span class="badge badge-scheduled">${f.status}</span>`;
     }
 
@@ -3024,11 +3050,11 @@ function openFlightDetailModal(id) {
         ${comatItems.map(c => `
           <div class="fd-comat-chip ${c.status === 'completed' ? 'completed' : (c.description === 'AOG' ? 'aog' : '')}" onclick="closeModal('flight-detail-modal'); openDetailModal('${c.id}');">
             <div class="fd-comat-chip-top">
-              <span class="fd-comat-order">${escapeHtml(c.orderNumber || 'No Order #')}</span>
+              <span class="fd-comat-order">${escapeHtml(c.trackingNumber || 'No Tracking #')}</span>
               ${c.status === 'completed' ? '<span class="fd-comat-badge done">✓ Received</span>' : c.description === 'AOG' ? '<span class="fd-comat-badge aog">🚨 AOG</span>' : '<span class="fd-comat-badge pending">● Pending</span>'}
             </div>
             <div class="fd-comat-desc">${escapeHtml(c.description || '')}</div>
-            <div class="fd-comat-meta">${c.quantity} pc${c.quantity > 1 ? 's' : ''} · ${escapeHtml(c.partNumber || '—')}</div>
+            <div class="fd-comat-meta">${c.quantity} pc${c.quantity > 1 ? 's' : ''} · Order ${escapeHtml(c.orderNumber || '—')} · ${escapeHtml(c.partNumber || '—')}</div>
           </div>
         `).join('')}
       </div>
@@ -3117,6 +3143,7 @@ function renderComat() {
 
   if (search) {
     list = list.filter(c =>
+      (c.trackingNumber||'').toLowerCase().includes(search) ||
       (c.orderNumber||'').toLowerCase().includes(search) ||
       (c.partNumber||'').toLowerCase().includes(search) ||
       (c.flightId||'').toLowerCase().includes(search) ||
@@ -3130,7 +3157,7 @@ function renderComat() {
   const tbody = document.getElementById('comat-tbody');
   if (!list.length) {
     const labels = { all:'COMAT', outbound:'outbound COMAT', inbound:'inbound COMAT', completed:'completed records' };
-    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">📦</div><div class="empty-label">No ${labels[currentSubTab]} found.</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><div class="empty-icon">📦</div><div class="empty-label">No ${labels[currentSubTab]} found.</div></div></td></tr>`;
     return;
   }
 
@@ -3149,6 +3176,7 @@ function renderComat() {
 
     return `<tr class="${c.status === 'completed' ? 'completed-row' : ''}" onclick="openDetailModal('${c.id}', event)">
       <td class="station-col" style="display:none;"><span class="badge badge-scheduled">${(f && f.station) || currentStation}</span></td>
+      <td class="mono" style="color:#ffffff; font-weight:700;">${c.trackingNumber || '—'}</td>
       <td class="mono" style="color:var(--porter-teal)">${f ? f.flight : c.flightId}</td>
       <td class="mono">${route}</td>
       <td class="mono">${c.orderNumber || '—'}</td>
@@ -3177,7 +3205,7 @@ function openDetailModal(id, e) {
     else if (f.origin === currentStation) direction = 'OUTBOUND';
   }
 
-  document.getElementById('detail-modal-title').textContent = `COMAT — ${f ? f.flight : c.flightId} (${direction})`;
+  document.getElementById('detail-modal-title').textContent = `${c.trackingNumber || 'COMAT'} — ${f ? f.flight : c.flightId} (${direction})`;
   const completed = c.status === 'completed';
 
   document.getElementById('detail-modal-body').innerHTML = `
@@ -3186,6 +3214,7 @@ function openDetailModal(id, e) {
       ${completed ? '<span class="badge badge-completed">✓ Received</span>' : ''}
     </div>
     <div class="detail-grid">
+      <div class="detail-item"><div class="detail-item-label">Tracking #</div><div class="detail-item-value" style="color:#ffffff; font-weight:700;">${c.trackingNumber || '—'}</div></div>
       <div class="detail-item"><div class="detail-item-label">Flight</div><div class="detail-item-value">${f ? f.flight : c.flightId}</div></div>
       <div class="detail-item"><div class="detail-item-label">Route</div><div class="detail-item-value">${f ? f.origin+'→'+f.dest : '—'}</div></div>
       <div class="detail-item"><div class="detail-item-label">Order #</div><div class="detail-item-value">${c.orderNumber || 'N/A'}</div></div>
@@ -3389,7 +3418,7 @@ document.addEventListener('click', (e) => {
   if (combo && !combo.contains(e.target)) closeFlightCombo();
 });
 
-function addComat() {
+async function addComat() {
   const flightId    = document.getElementById('form-flight').value;
   const orderNumber = document.getElementById('form-orderNumber').value.trim();
   const partNumber  = document.getElementById('form-part').value.trim();
@@ -3407,8 +3436,14 @@ function addComat() {
   const flight = flights.find(f => f.id === flightId);
   const direction = (flight && !isFlightInbound(flight)) ? 'OUTBOUND' : 'INBOUND';
 
+  const addBtn = document.getElementById('comat-add-btn');
+  if (addBtn) addBtn.disabled = true;
+
+  const trackingNumber = await getNextTrackingNumber();
+
   const record = {
     id:          'COM-' + Date.now(),
+    trackingNumber,
     flightId,
     direction,
     orderNumber: orderNumber || null,
@@ -3427,7 +3462,8 @@ function addComat() {
   clearForm();
   renderComat();
   document.getElementById('comat-count').textContent = comat.filter(c=>c.status!=='completed').length;
-  showToast(`COMAT added to ${flight ? flight.flight : flightId}`, 'success');
+  showToast(`${trackingNumber} added to ${flight ? flight.flight : flightId}`, 'success');
+  if (addBtn) addBtn.disabled = false;
 }
 
 function clearForm() {
