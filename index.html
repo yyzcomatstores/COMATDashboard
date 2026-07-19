@@ -757,6 +757,9 @@
 
   .filter-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .completed-row td { opacity: 0.7; }
+  .overdue-row { background: rgba(232,65,62,0.08); }
+  .overdue-row:hover { background: rgba(232,65,62,0.13); }
+  .overdue-row td:first-child { box-shadow: inset 3px 0 0 var(--porter-red); }
 
   .delay-text { color: var(--porter-red); font-family: var(--font-mono); font-size: 12px; }
   .live-indicator { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--porter-green); font-family: var(--font-mono); }
@@ -1499,6 +1502,7 @@
     <div class="modal-body" id="detail-modal-body"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('detail-modal')">Close</button>
+      <button class="btn btn-ghost btn-sm" id="detail-edit-btn">✎ Edit</button>
       <button class="btn btn-danger btn-sm" id="detail-remove-btn">Remove Record</button>
       <button class="btn btn-success btn-sm" id="detail-confirm-btn">Confirm Receipt →</button>
     </div>
@@ -1516,6 +1520,52 @@
     <div class="modal-footer" style="justify-content: space-between;">
       <button class="btn btn-ghost" onclick="closeModal('flight-detail-modal')">Close</button>
       <button class="btn btn-primary" id="flight-detail-comat-btn">+ Add COMAT to this Flight</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT COMAT MODAL -->
+<div class="modal-overlay" id="edit-comat-modal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div class="modal-title" id="edit-comat-title">Edit COMAT</div>
+      <button class="modal-close" onclick="closeModal('edit-comat-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;" id="edit-comat-subtitle"></div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Order Number</label>
+          <input type="text" id="edit-orderNumber" placeholder="e.g. WO-48213">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Person Responsible <span style="color:var(--porter-red)">*</span></label>
+          <input type="text" id="edit-part" placeholder="Name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Pieces</label>
+          <input type="number" id="edit-qty" min="1" value="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority <span style="color:var(--porter-red)">*</span></label>
+          <select id="edit-desc" required>
+            <option value="">— Select priority —</option>
+            <option value="AOG">AOG</option>
+            <option value="Normal">Normal</option>
+            <option value="Expedite">Expedite</option>
+            <option value="N/A">N/A</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Notes</label>
+          <textarea id="edit-notes" rows="3" placeholder="Optional notes..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('edit-comat-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditedComat()">Save Changes</button>
     </div>
   </div>
 </div>
@@ -3100,6 +3150,9 @@ function renderComat() {
   // Direction (Outbound/Inbound) is also recomputed relative to whoever is
   // VIEWING it, not the station that originally logged it — the same shipment
   // is Outbound from YYZ's perspective and Inbound from YOW's.
+  const now = Date.now();
+  const OVERDUE_MS = 24 * 60 * 60 * 1000; // 24 hours
+
   const comat = getComat().map(c => {
     const f = allFlights.find(fl => fl.id === c.flightId);
     let direction = c.direction;
@@ -3114,8 +3167,34 @@ function renderComat() {
         direction = 'OUTBOUND';
         visible = true;
       }
+    } else if (currentStation !== 'ALL') {
+      // The flight has aged out of the live feed (it only keeps a rolling
+      // ~2-3 day window) — but completed records and overdue active ones
+      // still need to stay visible indefinitely, not disappear just because
+      // we can no longer look up live flight details. Fall back to the
+      // station embedded directly in the flight id itself
+      // (FlightNumber_Station_Date), and whatever direction was recorded
+      // when the record was created.
+      const idParts = (c.flightId || '').split('_');
+      const idStation = idParts.length > 1 ? idParts[1] : null;
+      if (idStation === currentStation) {
+        visible = true;
+        direction = c.direction;
+      }
     }
-    return { ...c, _flight: f, _direction: direction, _visible: visible };
+
+    // Overdue: still active, and more than 24h have passed since the flight
+    // was scheduled — or, if the flight's aged out of the feed, since the
+    // record was added (best available fallback reference point).
+    let overdue = false;
+    if (c.status !== 'completed') {
+      const refTime = f && f.std ? new Date(f.std).getTime() : (c.addedAt ? new Date(c.addedAt).getTime() : null);
+      if (refTime && !Number.isNaN(refTime) && (now - refTime) > OVERDUE_MS) {
+        overdue = true;
+      }
+    }
+
+    return { ...c, _flight: f, _direction: direction, _visible: visible, _overdue: overdue };
   }).filter(c => c._visible);
 
   const search  = (document.getElementById('comat-search').value || '').toLowerCase();
@@ -3169,22 +3248,26 @@ function renderComat() {
       : '<span class="badge badge-inbound">⬇ IN</span>';
     const completeBadge = c.status === 'completed' ? '<span class="badge badge-completed">✓ Received</span>' : dirBadge;
     const addedDate = new Date(c.addedAt).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+    const flightDisplay = f ? f.flight : (c.flightId || '').split('_')[0] || c.flightId;
 
     const actions = c.status !== 'completed'
       ? `<button class="btn btn-primary btn-view" onclick="openDetailModal('${c.id}', event)">View</button>`
       : `<span style="color:var(--porter-green); font-size:14px; font-weight:700;">✓ ${c.receivedBy || 'Unknown'}</span>`;
 
-    return `<tr class="${c.status === 'completed' ? 'completed-row' : ''}" onclick="openDetailModal('${c.id}', event)">
+    const rowClasses = [c.status === 'completed' ? 'completed-row' : '', c._overdue ? 'overdue-row' : ''].filter(Boolean).join(' ');
+    const overdueTag = c._overdue ? ' <span class="badge badge-aog" style="margin-left:6px;">⏰ OVERDUE</span>' : '';
+
+    return `<tr class="${rowClasses}" onclick="openDetailModal('${c.id}', event)">
       <td class="station-col" style="display:none;"><span class="badge badge-scheduled">${(f && f.station) || currentStation}</span></td>
       <td class="mono" style="color:#ffffff; font-weight:700;">${c.trackingNumber || '—'}</td>
-      <td class="mono" style="color:var(--porter-teal)">${f ? f.flight : c.flightId}</td>
+      <td class="mono" style="color:var(--porter-teal)">${flightDisplay}</td>
       <td class="mono">${route}</td>
       <td class="mono">${c.orderNumber || '—'}</td>
       <td class="mono">${c.partNumber || '—'}</td>
       <td>${c.description}</td>
       <td class="mono">${c.quantity}</td>
       <td class="muted" style="font-size:12px;">${addedDate}</td>
-      <td>${completeBadge}</td>
+      <td>${completeBadge}${overdueTag}</td>
       <td onclick="event.stopPropagation()">${actions}</td>
     </tr>`;
   }).join('');
@@ -3223,20 +3306,25 @@ function openDetailModal(id, e) {
       <div class="detail-item"><div class="detail-item-label">Added</div><div class="detail-item-value" style="font-size:12px;">${new Date(c.addedAt).toLocaleString()}</div></div>
       <div class="detail-item" style="grid-column:1/-1"><div class="detail-item-label">Description</div><div class="detail-item-value" style="font-size:14px; font-family:var(--font-ui);">${c.description}</div></div>
       ${c.notes ? `<div class="detail-item" style="grid-column:1/-1"><div class="detail-item-label">Notes</div><div class="detail-item-value" style="font-size:13px; font-family:var(--font-ui); color:var(--text-secondary);">${c.notes}</div></div>` : ''}
+      ${c.editedAt ? `<div class="detail-item" style="grid-column:1/-1"><div class="detail-item-label">Last Edited</div><div class="detail-item-value" style="font-size:12px; color:var(--text-secondary);">${c.editedBy || 'Unknown'} — ${new Date(c.editedAt).toLocaleString()}</div></div>` : ''}
       ${completed ? `<div class="detail-item"><div class="detail-item-label">Received by</div><div class="detail-item-value">${c.receivedBy || 'Unknown'}</div></div><div class="detail-item"><div class="detail-item-label">Received at</div><div class="detail-item-value" style="font-size:12px;">${new Date(c.completedAt).toLocaleString()}</div></div>` : ''}
     </div>`;
 
   const removeBtn  = document.getElementById('detail-remove-btn');
   const confirmBtn = document.getElementById('detail-confirm-btn');
+  const editBtn    = document.getElementById('detail-edit-btn');
 
   if (completed) {
     removeBtn.style.display  = 'none';
     confirmBtn.style.display = 'none';
+    editBtn.style.display    = 'none';
   } else {
     removeBtn.style.display  = 'inline-flex';
     confirmBtn.style.display = 'inline-flex';
+    editBtn.style.display    = 'inline-flex';
     removeBtn.onclick  = () => removeComat(id);
     confirmBtn.onclick = () => { closeModal('detail-modal'); openConfirmModal(id); };
+    editBtn.onclick    = () => { closeModal('detail-modal'); openEditComatModal(id); };
   }
 
   openModal('detail-modal');
@@ -3288,6 +3376,61 @@ function completeComat() {
   closeModal('confirm-modal');
   renderComat();
   showToast('COMAT marked as received', 'success');
+}
+
+
+// EDIT COMAT
+// Reachable from both the COMAT Dashboard and the Flight Information page —
+// both surfaces route through the same detail modal, so wiring the Edit
+// button in there once covers both places automatically. Only available for
+// active (non-completed) records — the flight itself can't be reassigned
+// here, only the shipment details.
+
+function openEditComatModal(id) {
+  const c = getComat().find(c => c.id === id);
+  if (!c) return;
+  selectedComatId = id;
+
+  const f = getFlights().find(fl => fl.id === c.flightId);
+  document.getElementById('edit-comat-title').textContent = `Edit ${c.trackingNumber || 'COMAT'}`;
+  document.getElementById('edit-comat-subtitle').textContent =
+    `Flight ${f ? f.flight : (c.flightId||'').split('_')[0]}${f ? ` · ${f.origin}→${f.dest}` : ''} — the flight itself can't be changed here.`;
+
+  document.getElementById('edit-orderNumber').value = c.orderNumber || '';
+  document.getElementById('edit-part').value = c.partNumber || '';
+  document.getElementById('edit-qty').value = c.quantity || 1;
+  document.getElementById('edit-desc').value = c.description || '';
+  document.getElementById('edit-notes').value = c.notes || '';
+
+  openModal('edit-comat-modal');
+}
+
+function saveEditedComat() {
+  const orderNumber = document.getElementById('edit-orderNumber').value.trim();
+  const partNumber  = document.getElementById('edit-part').value.trim();
+  const qty         = parseInt(document.getElementById('edit-qty').value) || 1;
+  const desc        = document.getElementById('edit-desc').value;
+  const notes       = document.getElementById('edit-notes').value.trim();
+
+  if (!partNumber) { showToast('Person Responsible is required', 'danger'); return; }
+  if (!desc)       { showToast('Please select a Description priority', 'danger'); return; }
+
+  const comat = getComat();
+  const idx = comat.findIndex(c => c.id === selectedComatId);
+  if (idx === -1) return;
+
+  comat[idx].orderNumber = orderNumber || null;
+  comat[idx].partNumber  = partNumber;
+  comat[idx].quantity    = qty;
+  comat[idx].description = desc;
+  comat[idx].notes       = notes || null;
+  comat[idx].editedAt    = new Date().toISOString();
+  comat[idx].editedBy    = currentUser ? currentUser.display : 'Unknown';
+
+  saveComat(comat);
+  closeModal('edit-comat-modal');
+  renderComat();
+  showToast(`${comat[idx].trackingNumber || 'COMAT'} updated`, 'success');
 }
 
 
