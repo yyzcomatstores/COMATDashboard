@@ -2715,17 +2715,17 @@ function matchesFlightDateTab(f, tab) {
   return isSameLocalDay(std, ref);
 }
 
-// Is this flight scheduled on a calendar day before today? Used to keep
-// past-dated flights (e.g. yesterday's) out of the Add COMAT flight picker —
-// COMAT should only ever get attached to a flight that hasn't happened yet.
+// Has this flight's scheduled time (accounting for any known delay) already
+// passed? Used to keep already-departed/arrived flights out of the Add COMAT
+// flight picker — COMAT should only ever get attached to a flight that
+// hasn't happened yet, not just one that isn't from a prior calendar day.
 function isPastFlightDate(f) {
   if (!f.std) return false;
   const std = new Date(f.std);
   if (isNaN(std.getTime())) return false;
-  const today = new Date();
-  const stdDateOnly = new Date(std.getFullYear(), std.getMonth(), std.getDate());
-  const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  return stdDateOnly < todayDateOnly;
+  const delayMin = getDelayMinutes(f);
+  const effectiveTime = std.getTime() + (delayMin * 60000);
+  return effectiveTime < Date.now();
 }
 
 // ── FAVOURITES (per-profile, per-station) ──────────────────
@@ -3140,7 +3140,7 @@ function openFlightDetailModal(id) {
 function flightRowClick(id) {
   const f = getFlights().find(fl => fl.id === id);
   if (f && isPastFlightDate(f)) {
-    showToast("Can't add COMAT to a past flight — only today's or future flights are allowed", 'danger');
+    showToast("Can't add COMAT to a flight that's already departed/arrived — only upcoming flights are allowed", 'danger');
     return;
   }
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -3593,7 +3593,7 @@ async function addComat() {
 
   const selectedFlight = getFlights().find(f => f.id === flightId);
   if (selectedFlight && isPastFlightDate(selectedFlight)) {
-    showToast("Can't add COMAT to a past flight — only today's or future flights are allowed", 'danger');
+    showToast("Can't add COMAT to a flight that's already departed/arrived — only upcoming flights are allowed", 'danger');
     return;
   }
 
