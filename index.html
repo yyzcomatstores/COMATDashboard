@@ -2226,9 +2226,41 @@ function showBrowserNotification(title, body) {
   } catch (e) { console.warn('Browser notification failed:', e); }
 }
 
-function fireNotification(title, body) {
+function playAOGAlertSound() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const now = ctx.currentTime;
+
+    // AOG alert — a rapid alternating two-tone siren using square waves
+    // (harsher/more digital than the soft sine-wave cabin chime), deliberately
+    // closer to an emergency-alert tone so an AOG item can't be mistaken for
+    // a routine notification.
+    const toneA = 970, toneB = 770;
+    const beepDur = 0.15, gap = 0.03, repeats = 4;
+
+    for (let i = 0; i < repeats; i++) {
+      const freq = i % 2 === 0 ? toneA : toneB;
+      const t0 = now + i * (beepDur + gap);
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, t0);
+      gain.gain.linearRampToValueAtTime(0.16, t0 + 0.01);
+      gain.gain.setValueAtTime(0.16, t0 + beepDur - 0.02);
+      gain.gain.linearRampToValueAtTime(0, t0 + beepDur);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + beepDur + 0.02);
+    }
+  } catch (e) { console.warn('AOG alert sound failed:', e); }
+}
+
+function fireNotification(title, body, urgent) {
   if (!notificationsEnabled) return;
-  playNotificationSound();
+  if (urgent) playAOGAlertSound(); else playNotificationSound();
   showBrowserNotification(title, body);
 }
 
@@ -2277,7 +2309,9 @@ function startComatListener() {
       // record), and not anything the current user just added themselves.
       data.forEach(c => {
         if (!knownComatIds.has(c.id) && (!currentUser || c.addedBy !== currentUser.display)) {
-          fireNotification('📦 New COMAT Added', `${c.trackingNumber || 'COMAT'} — ${(c.flightId||'').split('_')[0]} by ${c.addedBy || 'Unknown'}`);
+          const isAOG = c.description === 'AOG';
+          const title = isAOG ? '🚨 AOG COMAT Added' : '📦 New COMAT Added';
+          fireNotification(title, `${c.trackingNumber || 'COMAT'} — ${(c.flightId||'').split('_')[0]} by ${c.addedBy || 'Unknown'}`, isAOG);
         }
       });
     }
