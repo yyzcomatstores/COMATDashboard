@@ -2715,6 +2715,19 @@ function matchesFlightDateTab(f, tab) {
   return isSameLocalDay(std, ref);
 }
 
+// Is this flight scheduled on a calendar day before today? Used to keep
+// past-dated flights (e.g. yesterday's) out of the Add COMAT flight picker —
+// COMAT should only ever get attached to a flight that hasn't happened yet.
+function isPastFlightDate(f) {
+  if (!f.std) return false;
+  const std = new Date(f.std);
+  if (isNaN(std.getTime())) return false;
+  const today = new Date();
+  const stdDateOnly = new Date(std.getFullYear(), std.getMonth(), std.getDate());
+  const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return stdDateOnly < todayDateOnly;
+}
+
 // ── FAVOURITES (per-profile, per-station) ──────────────────
 // Stored at favourites/{station}/{favKey}/{flightId} = true, where favKey is
 // the logged-in profile's id (or username for profile-less utility logins).
@@ -3125,6 +3138,11 @@ function openFlightDetailModal(id) {
 }
 
 function flightRowClick(id) {
+  const f = getFlights().find(fl => fl.id === id);
+  if (f && isPastFlightDate(f)) {
+    showToast("Can't add COMAT to a past flight — only today's or future flights are allowed", 'danger');
+    return;
+  }
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn')[2].classList.add('active');
@@ -3451,7 +3469,7 @@ let flightComboOptions = [];
 let flightComboHighlightIndex = -1;
 
 function updateFlightDropdown() {
-  const flights = getFlights().filter(belongsToStation);
+  const flights = getFlights().filter(belongsToStation).filter(f => !isPastFlightDate(f));
   const hidden = document.getElementById('form-flight');
   const cur = hidden.value;
 
@@ -3573,7 +3591,12 @@ async function addComat() {
   if (!partNumber) { showToast('Person Responsible is required', 'danger'); return; }
   if (!desc)       { showToast('Please select a Description priority', 'danger'); return; }
 
-  
+  const selectedFlight = getFlights().find(f => f.id === flightId);
+  if (selectedFlight && isPastFlightDate(selectedFlight)) {
+    showToast("Can't add COMAT to a past flight — only today's or future flights are allowed", 'danger');
+    return;
+  }
+
   // Determine direction from selected flight
   const flights = getFlights();
   const flight = flights.find(f => f.id === flightId);
