@@ -1388,6 +1388,7 @@
             <th>Responsible</th>
             <th>Remarks</th>
             <th>PCS</th>
+            <th>Weight</th>
             <th>Time</th>
             <th>Direction</th>
             <th>Actions</th>
@@ -1444,6 +1445,10 @@
         <div class="form-group">
           <label class="form-label">Pieces</label>
           <input type="number" id="form-qty" placeholder="1" min="1" value="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Weight <span style="color:var(--text-muted)">(lbs)</span></label>
+          <input type="number" id="form-weight" placeholder="e.g. 25" min="0" step="0.1">
         </div>
         <div class="form-group">
           <label class="form-label">Priority <span style="color:var(--porter-red)">*</span></label>
@@ -1570,6 +1575,10 @@
         <div class="form-group">
           <label class="form-label">Pieces</label>
           <input type="number" id="edit-qty" min="1" value="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Weight <span style="color:var(--text-muted)">(lbs)</span></label>
+          <input type="number" id="edit-weight" min="0" step="0.1" placeholder="e.g. 25">
         </div>
         <div class="form-group">
           <label class="form-label">Priority <span style="color:var(--porter-red)">*</span></label>
@@ -3313,7 +3322,7 @@ function openFlightDetailModal(id) {
               ${c.status === 'completed' ? '<span class="fd-comat-badge done">✓ Received</span>' : c.description === 'AOG' ? '<span class="fd-comat-badge aog">🚨 AOG</span>' : '<span class="fd-comat-badge pending">● Pending</span>'}
             </div>
             <div class="fd-comat-desc">${escapeHtml(c.description || '')}</div>
-            <div class="fd-comat-meta">${c.quantity} pc${c.quantity > 1 ? 's' : ''} · Order ${escapeHtml(c.orderNumber || '—')} · ${escapeHtml(c.partNumber || '—')}</div>
+            <div class="fd-comat-meta">${c.quantity} pc${c.quantity > 1 ? 's' : ''}${(c.weight !== null && c.weight !== undefined) ? ' · ' + c.weight + ' lb' : ''} · Order ${escapeHtml(c.orderNumber || '—')} · ${escapeHtml(c.partNumber || '—')}</div>
           </div>
         `).join('')}
       </div>
@@ -3450,7 +3459,7 @@ function renderComat() {
   const tbody = document.getElementById('comat-tbody');
   if (!list.length) {
     const labels = { all:'COMAT', outbound:'outbound COMAT', inbound:'inbound COMAT', completed:'completed records' };
-    tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><div class="empty-icon">📦</div><div class="empty-label">No ${labels[currentSubTab]} found.</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state"><div class="empty-icon">📦</div><div class="empty-label">No ${labels[currentSubTab]} found.</div></div></td></tr>`;
     return;
   }
 
@@ -3480,6 +3489,7 @@ function renderComat() {
       <td class="mono">${c.partNumber || '—'}</td>
       <td>${c.description}</td>
       <td class="mono">${c.quantity}</td>
+      <td class="mono">${(c.weight !== null && c.weight !== undefined) ? c.weight + ' lb' : '—'}</td>
       <td class="muted" style="font-size:12px;">${addedDate}</td>
       <td>${completeBadge}${overdueTag}</td>
       <td onclick="event.stopPropagation()">${actions}</td>
@@ -3517,6 +3527,7 @@ function openDetailModal(id, e) {
       <div class="detail-item"><div class="detail-item-label">Order #</div><div class="detail-item-value">${c.orderNumber || 'N/A'}</div></div>
       <div class="detail-item"><div class="detail-item-label">Person Responsible</div><div class="detail-item-value">${c.partNumber || '—'}</div></div>
       <div class="detail-item"><div class="detail-item-label">Pieces</div><div class="detail-item-value">${c.quantity}</div></div>
+      <div class="detail-item"><div class="detail-item-label">Weight</div><div class="detail-item-value">${(c.weight !== null && c.weight !== undefined) ? c.weight + ' lb' : '—'}</div></div>
       <div class="detail-item"><div class="detail-item-label">Added</div><div class="detail-item-value" style="font-size:12px;">${new Date(c.addedAt).toLocaleString()}</div></div>
       <div class="detail-item" style="grid-column:1/-1"><div class="detail-item-label">Description</div><div class="detail-item-value" style="font-size:14px; font-family:var(--font-ui);">${c.description}</div></div>
       ${c.notes ? `<div class="detail-item" style="grid-column:1/-1"><div class="detail-item-label">Notes</div><div class="detail-item-value" style="font-size:13px; font-family:var(--font-ui); color:var(--text-secondary);">${c.notes}</div></div>` : ''}
@@ -3613,6 +3624,7 @@ function openEditComatModal(id) {
   document.getElementById('edit-orderNumber').value = c.orderNumber || '';
   document.getElementById('edit-part').value = c.partNumber || '';
   document.getElementById('edit-qty').value = c.quantity || 1;
+  document.getElementById('edit-weight').value = (c.weight !== null && c.weight !== undefined) ? c.weight : '';
   document.getElementById('edit-desc').value = c.description || '';
   document.getElementById('edit-notes').value = c.notes || '';
 
@@ -3623,6 +3635,7 @@ function saveEditedComat() {
   const orderNumber = document.getElementById('edit-orderNumber').value.trim();
   const partNumber  = document.getElementById('edit-part').value.trim();
   const qty         = parseInt(document.getElementById('edit-qty').value) || 1;
+  const weight      = document.getElementById('edit-weight').value.trim();
   const desc        = document.getElementById('edit-desc').value;
   const notes       = document.getElementById('edit-notes').value.trim();
 
@@ -3636,6 +3649,7 @@ function saveEditedComat() {
   comat[idx].orderNumber = orderNumber || null;
   comat[idx].partNumber  = partNumber;
   comat[idx].quantity    = qty;
+  comat[idx].weight      = weight !== '' ? parseFloat(weight) : null;
   comat[idx].description = desc;
   comat[idx].notes       = notes || null;
   comat[idx].editedAt    = new Date().toISOString();
@@ -3780,6 +3794,7 @@ async function addComat() {
   const orderNumber = document.getElementById('form-orderNumber').value.trim();
   const partNumber  = document.getElementById('form-part').value.trim();
   const qty         = parseInt(document.getElementById('form-qty').value) || 1;
+  const weight      = document.getElementById('form-weight').value.trim();
   const desc        = document.getElementById('form-desc').value;
   const notes       = document.getElementById('form-notes').value.trim();
 
@@ -3811,6 +3826,7 @@ async function addComat() {
     orderNumber: orderNumber || null,
     partNumber:  partNumber || null,
     quantity:    qty,
+    weight:      weight !== '' ? parseFloat(weight) : null,
     description: desc || null,
     notes:       notes || null,
     status:      'active',
@@ -3829,7 +3845,7 @@ async function addComat() {
 }
 
 function clearForm() {
-  ['form-flight','form-flight-search','form-orderNumber','form-part','form-notes'].forEach(id => {
+  ['form-flight','form-flight-search','form-orderNumber','form-part','form-notes','form-weight'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
