@@ -377,6 +377,29 @@
   .refresh-badge:hover { border-color: var(--porter-teal-border); color: var(--porter-teal); }
   .refresh-badge .refresh-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--porter-green); }
 
+  .notif-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    filter: grayscale(1);
+    opacity: 0.6;
+  }
+  .notif-toggle-btn:hover { border-color: var(--porter-teal-border); }
+  .notif-toggle-btn.active {
+    filter: none;
+    opacity: 1;
+    border-color: var(--porter-teal-border);
+    background: var(--porter-teal-dim);
+  }
+
   /* User badge */
   .user-badge {
     display: flex;
@@ -1186,6 +1209,7 @@
       <span id="refresh-countdown">5:00</span>
     </div>
     <div class="header-time" id="clock">--:-- UTC</div>
+    <button class="notif-toggle-btn" id="notif-toggle-btn" onclick="toggleNotifications()" title="Notifications off — click to enable">🔕</button>
     <div class="user-badge" onclick="doLogout()" title="Click to sign out">
       <div class="user-avatar" id="user-avatar">?</div>
       <span id="user-display">User</span>
@@ -1810,6 +1834,7 @@ function completeLogin(user, profile) {
   startFavouritesListener();
   startChatStationListener();
   startChatTypingStationListener();
+  updateNotificationToggleUI();
   showToast(`Welcome, ${currentUser.display}`, 'success');
   if (user.role === 'Display') {
     setTimeout(startTvCycle, 800);
@@ -1829,6 +1854,8 @@ function doLogout() {
   typingCache = { station: {}, global: {} };
   chatStationListenerFor = null;
   chatTypingStationListenerFor = null;
+  knownComatIds = null;
+  knownChatKeys = { station: null, global: null };
   document.querySelectorAll('.chat-channel-tab').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.channel === 'station');
   });
@@ -1863,6 +1890,7 @@ function checkSession() {
     startFavouritesListener();
     startChatStationListener();
     startChatTypingStationListener();
+    updateNotificationToggleUI();
     if (user.role === 'Display') {
       setTimeout(startTvCycle, 800);
     }
@@ -2136,6 +2164,83 @@ function getComatFromFirebase(callback) {
   });
 }
 
+// ════════════════════════════════════════════
+// NOTIFICATIONS (sound + in-page browser popup)
+// Opt-in, per-device (stored in localStorage, not tied to a profile).
+// Fires for NEW COMAT records and NEW chat messages from anyone other than
+// the person currently logged in — never for your own actions, and never
+// on the very first load of a listener (which would otherwise "notify"
+// about every record/message that already existed before you opened the app).
+// ════════════════════════════════════════════
+let notificationsEnabled = localStorage.getItem('porter_notifications_enabled') === 'true';
+
+function playNotificationSound() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const now = ctx.currentTime;
+    [880, 1174.66].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const start = now + i * 0.12;
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.22, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.28);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.3);
+    });
+  } catch (e) { console.warn('Notification sound failed:', e); }
+}
+
+function showBrowserNotification(title, body) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  try {
+    const n = new Notification(title, { body, tag: 'porter-comat-' + Date.now() });
+    n.onclick = () => { window.focus(); n.close(); };
+    setTimeout(() => n.close(), 8000);
+  } catch (e) { console.warn('Browser notification failed:', e); }
+}
+
+function fireNotification(title, body) {
+  if (!notificationsEnabled) return;
+  playNotificationSound();
+  showBrowserNotification(title, body);
+}
+
+async function toggleNotifications() {
+  if (!notificationsEnabled) {
+    if ('Notification' in window && Notification.permission !== 'granted') {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        showToast("Browser popup blocked — you'll still hear the sound", 'success');
+      }
+    }
+    notificationsEnabled = true;
+    localStorage.setItem('porter_notifications_enabled', 'true');
+    showToast('Notifications enabled', 'success');
+    playNotificationSound(); // quick confirmation beep so it's obvious it worked
+  } else {
+    notificationsEnabled = false;
+    localStorage.setItem('porter_notifications_enabled', 'false');
+    showToast('Notifications disabled', 'success');
+  }
+  updateNotificationToggleUI();
+}
+
+function updateNotificationToggleUI() {
+  const btn = document.getElementById('notif-toggle-btn');
+  if (!btn) return;
+  btn.classList.toggle('active', notificationsEnabled);
+  btn.textContent = notificationsEnabled ? '🔔' : '🔕';
+  btn.title = notificationsEnabled ? 'Notifications on — click to disable' : 'Notifications off — click to enable';
+}
+
+let knownComatIds = null; // null = listener hasn't received its first snapshot yet
+
 function startComatListener() {
   if (!firebaseDb) return;
   
@@ -2143,6 +2248,20 @@ function startComatListener() {
   comatListener = window.firebaseOnValue(comatRef, (snapshot) => {
     const data = normalizeComatFromFirebase(snapshot.val());
     localStorage.setItem(STORAGE_KEY_COMAT, JSON.stringify(data));
+
+    const currentIds = new Set(data.map(c => c.id));
+    if (knownComatIds !== null) {
+      // Only ever notify for records that are NEW since the last snapshot —
+      // not the first load (which would otherwise fire once per existing
+      // record), and not anything the current user just added themselves.
+      data.forEach(c => {
+        if (!knownComatIds.has(c.id) && (!currentUser || c.addedBy !== currentUser.display)) {
+          fireNotification('📦 New COMAT Added', `${c.trackingNumber || 'COMAT'} — ${(c.flightId||'').split('_')[0]} by ${c.addedBy || 'Unknown'}`);
+        }
+      });
+    }
+    knownComatIds = currentIds;
+
     renderComat();
     updateSyncBanner('connected', 'Synced — COMAT data updated');
   }, (err) => {
@@ -2231,11 +2350,31 @@ function startChatListener() {
   startChatStationListener();
 }
 
+let knownChatKeys = { station: null, global: null }; // null = hasn't received its first snapshot yet
+
+function detectAndNotifyNewMessages(channel, messages) {
+  const keys = Object.keys(messages || {});
+  const currentKeySet = new Set(keys);
+  if (knownChatKeys[channel] !== null) {
+    keys.forEach(key => {
+      if (!knownChatKeys[channel].has(key)) {
+        const m = messages[key];
+        if (m && (!currentUser || m.sender !== currentUser.display)) {
+          const label = channel === 'global' ? '🌐 New Global Chat' : '💬 New Chat Message';
+          fireNotification(label, `${m.sender}: ${(m.text || '').slice(0, 60)}`);
+        }
+      }
+    });
+  }
+  knownChatKeys[channel] = currentKeySet;
+}
+
 function startChatGlobalListener() {
   if (!firebaseDb || chatListenerGlobal) return; // global channel never changes — subscribe once only
   const globalRef = window.firebaseRef(firebaseDb, 'chat_messages/GLOBAL');
   chatListenerGlobal = window.firebaseOnValue(globalRef, (snapshot) => {
     chatMessagesCache.global = pruneExpiredMessages('GLOBAL', snapshot.val() || {});
+    detectAndNotifyNewMessages('global', chatMessagesCache.global);
     updateChatChannelCounts();
     if (activeChatChannel === 'global') renderChat();
   }, (err) => {
@@ -2254,6 +2393,7 @@ function startChatStationListener() {
   if (typeof chatListenerStation === 'function') chatListenerStation(); // detach the previous station's listener
   chatStationListenerFor = station;
   chatMessagesCache.station = {}; // clear the old station's messages immediately, don't wait for the new snapshot
+  knownChatKeys.station = null; // switching stations means a fresh "first load" — don't notify for the new station's existing history
   if (document.getElementById('page-chat') && document.getElementById('page-chat').classList.contains('active')) renderChat();
 
   const stationRef = window.firebaseRef(firebaseDb, 'chat_messages/' + station);
@@ -2263,6 +2403,7 @@ function startChatStationListener() {
     // than letting it overwrite the correct, current station's cache.
     if (chatStationListenerFor !== station) return;
     chatMessagesCache.station = pruneExpiredMessages(station, snapshot.val() || {});
+    detectAndNotifyNewMessages('station', chatMessagesCache.station);
     updateChatChannelCounts();
     if (activeChatChannel === 'station') renderChat();
   }, (err) => {
