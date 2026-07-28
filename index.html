@@ -2237,8 +2237,8 @@ function playAOGAlertSound() {
     // (harsher/more digital than the soft sine-wave cabin chime), deliberately
     // closer to an emergency-alert tone so an AOG item can't be mistaken for
     // a routine notification.
-    const toneA = 970, toneB = 770;
-    const beepDur = 0.15, gap = 0.03, repeats = 4;
+    const toneA = 455, toneB = 555; // A4 / C#5
+    const beepDur = 0.15, gap = 0.03, beepsPerNote = 6, repeats = beepsPerNote * 2;
 
     for (let i = 0; i < repeats; i++) {
       const freq = i % 2 === 0 ? toneA : toneB;
