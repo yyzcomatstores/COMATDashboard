@@ -1061,6 +1061,117 @@
     transition: background 0.15s, border-color 0.15s;
   }
   #intro-mute-btn:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.55); }
+
+  /* ══════════════════════════════════════════════════
+     MOBILE RESPONSIVE
+     Everything above this point was built desktop-first
+     with fixed widths — these overrides reflow the same
+     layout for phone-sized screens instead of building a
+     separate mobile UI. Two breakpoints: general phones/
+     small tablets (768px) and a tighter pass for narrow
+     phones (420px).
+  ══════════════════════════════════════════════════ */
+  @media (max-width: 768px) {
+    /* Header: logo shrinks, clock hides, everything else stays reachable */
+    header { padding: 0 12px; height: 54px; }
+    .logo-block { gap: 8px; }
+    .logo-text { font-size: 12px; }
+    .logo-mark { width: 28px; height: 28px; }
+    .header-right { gap: 8px; }
+    .header-time { display: none; }
+    .station-badge { padding: 4px 8px; font-size: 11px; }
+    .station-badge span:not(.dot) { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .user-badge { padding: 4px 8px; }
+    .user-avatar { width: 24px; height: 24px; font-size: 11px; }
+    .notif-toggle-btn { width: 30px; height: 30px; }
+
+    /* Nav tabs: horizontal scroll instead of squishing every label */
+    .nav-tabs {
+      padding: 0 8px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .nav-tabs::-webkit-scrollbar { display: none; }
+    .tab-btn { padding: 12px 14px; font-size: 12.5px; flex: 0 0 auto; }
+
+    /* Main content area */
+    main { padding: 14px; }
+    .page-header { gap: 8px; }
+    .page-title { font-size: 17px; }
+    .page-subtitle { font-size: 12px; }
+
+    /* Stat cards: the 50px desktop/TV font is unusable on a phone */
+    .stat-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .stat-card { padding: 10px 12px; }
+    .stat-label { font-size: 11px; margin-bottom: 4px; }
+    .stat-value { font-size: 26px; }
+
+    /* Tables: scroll horizontally rather than crushing every column */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { min-width: 700px; font-size: 12px; }
+    .flight-toolbar select, .flight-toolbar input { font-size: 16px; } /* 16px prevents iOS auto-zoom on focus */
+
+    /* Toolbar / filter rows: stack cleanly instead of wrapping mid-button */
+    .flight-toolbar { padding: 10px 12px; }
+    .flight-toolbar .search-wrap { flex: 1 1 100%; }
+    .flight-toolbar .btn { margin-left: 0; }
+    .filter-row { gap: 8px; }
+
+    /* Date/status sub-tabs: scroll instead of wrapping to 3 rows */
+    .sub-tabs, #flight-date-tabs {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .sub-tabs::-webkit-scrollbar, #flight-date-tabs::-webkit-scrollbar { display: none; }
+    .sub-tab { flex: 0 0 auto; white-space: nowrap; }
+
+    /* Forms: guarantee single column regardless of content width */
+    .form-grid { grid-template-columns: 1fr; }
+    .form-card { padding: 1.1rem; }
+    input[type="text"], input[type="date"], input[type="number"], input[type="password"], select, textarea {
+      font-size: 16px; /* prevents iOS Safari from auto-zooming the page on focus */
+    }
+
+    /* Modals: use the available width, stack any side-by-side content */
+    .modal-overlay { padding: 0.5rem; }
+    .modal { max-width: 100% !important; max-height: 95vh; }
+    .modal-header { padding: 14px 16px; }
+    .modal-body { padding: 16px; }
+    .modal-footer { padding: 12px 16px; flex-wrap: wrap; }
+    .modal-footer .btn { flex: 1 1 auto; justify-content: center; }
+    .detail-grid { grid-template-columns: 1fr; }
+    .fd-legs { grid-template-columns: 1fr; gap: 14px; }
+    .fd-diagram { gap: 10px; }
+    .fd-code { font-size: 22px; }
+
+    /* Chat: wider bubbles, input row stays usable */
+    .chat-card { height: calc(100vh - 190px); }
+    .chat-msg { max-width: 88%; }
+    .chat-input-row { padding: 10px; }
+    .chat-channel-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; }
+
+    /* Login / profile screens: less wasted padding on a small viewport */
+    .login-card, .profile-grid { width: 100%; }
+    .login-card { padding: 1.5rem !important; margin: 0 12px; }
+    .profile-grid { grid-template-columns: 1fr; }
+
+    /* Buttons: comfortable tap targets everywhere */
+    .btn { min-height: 38px; }
+    .fav-star-btn, .btn-icon { min-width: 38px; min-height: 38px; }
+  }
+
+  @media (max-width: 420px) {
+    .stat-row { grid-template-columns: repeat(2, 1fr); }
+    .stat-value { font-size: 22px; }
+    table { min-width: 600px; font-size: 11.5px; }
+    .tab-btn { padding: 12px 10px; font-size: 12px; }
+    .tab-btn .tab-count { display: inline-block; }
+    .page-title { font-size: 16px; }
+  }
 </style>
 </head>
 <body>
