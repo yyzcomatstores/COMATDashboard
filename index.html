@@ -78,12 +78,20 @@
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
+  html {
+    overflow-x: hidden;
+    width: 100%;
+  }
+
   body {
     font-family: var(--font-ui);
     background: var(--porter-deep);
     color: var(--text-primary);
     min-height: 100vh;
+    width: 100%;
+    max-width: 100%;
     overflow-x: hidden;
+    overscroll-behavior-x: none;
   }
 
   /* LOGIN SCREEN */
@@ -1118,6 +1126,7 @@
     .flight-toolbar .search-wrap { flex: 1 1 100%; }
     .flight-toolbar .btn { margin-left: 0; }
     .filter-row { gap: 8px; }
+    .search-input { width: 100%; max-width: 100%; } /* the COMAT dashboard search box has no wrapper to inherit responsive width from — was hardcoded to 300px */
 
     /* Date/status sub-tabs: scroll instead of wrapping to 3 rows */
     .sub-tabs, #flight-date-tabs {
