@@ -1102,24 +1102,37 @@
       scrollbar-width: none;
     }
     .nav-tabs::-webkit-scrollbar { display: none; }
-    .tab-btn { padding: 12px 14px; font-size: 12.5px; flex: 0 0 auto; }
+    .tab-btn { padding: 10px 12px; font-size: 11.5px; flex: 0 0 auto; gap: 5px; }
 
     /* Main content area */
-    main { padding: 14px; }
+    main { padding: 10px; }
     .page-header { gap: 8px; }
     .page-title { font-size: 17px; }
     .page-subtitle { font-size: 12px; }
 
     /* Stat cards: the 50px desktop/TV font is unusable on a phone */
-    .stat-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-    .stat-card { padding: 10px 12px; }
-    .stat-label { font-size: 11px; margin-bottom: 4px; }
-    .stat-value { font-size: 26px; }
+    .stat-row { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+    .stat-card { padding: 8px 10px; border-radius: 8px; }
+    .stat-label { font-size: 9.5px; margin-bottom: 2px; letter-spacing: 0.4px; }
+    .stat-value { font-size: 20px; }
 
     /* Tables: scroll horizontally rather than crushing every column */
     .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     table { min-width: 700px; font-size: 12px; }
+    th { font-size: 10.5px; padding: 8px 10px; }
+    td, td.mono { font-size: 12px; padding: 8px 10px; }
     .flight-toolbar select, .flight-toolbar input { font-size: 16px; } /* 16px prevents iOS auto-zoom on focus */
+
+    /* Badges: the 20px base size is tuned for the TV-display mode, not a phone */
+    .badge { font-size: 10.5px; padding: 2px 7px; }
+
+    /* Buttons: slightly tighter than desktop, still comfortable to tap */
+    .btn { font-size: 12.5px; padding: 7px 12px; }
+    .btn-sm { font-size: 11px; padding: 5px 9px; }
+    .btn-view { padding: 7px 14px; font-size: 12px; }
+
+    /* Page header icons (inline SVGs sized for desktop) */
+    .page-title svg { width: 16px !important; height: 16px !important; }
 
     /* Toolbar / filter rows: stack cleanly instead of wrapping mid-button */
     .flight-toolbar { padding: 10px 12px; }
@@ -1136,11 +1149,13 @@
       scrollbar-width: none;
     }
     .sub-tabs::-webkit-scrollbar, #flight-date-tabs::-webkit-scrollbar { display: none; }
-    .sub-tab { flex: 0 0 auto; white-space: nowrap; }
+    .sub-tab { flex: 0 0 auto; white-space: nowrap; padding: 6px 12px; font-size: 12px; }
 
     /* Forms: guarantee single column regardless of content width */
     .form-grid { grid-template-columns: 1fr; }
-    .form-card { padding: 1.1rem; }
+    .form-card { padding: 0.85rem; margin-bottom: 1rem; }
+    .form-section-title { font-size: 13px; margin-bottom: 10px; }
+    .form-grid { gap: 10px; }
     input[type="text"], input[type="date"], input[type="number"], input[type="password"], select, textarea {
       font-size: 16px; /* prevents iOS Safari from auto-zooming the page on focus */
     }
@@ -1148,8 +1163,9 @@
     /* Modals: use the available width, stack any side-by-side content */
     .modal-overlay { padding: 0.5rem; }
     .modal { max-width: 100% !important; max-height: 95vh; }
-    .modal-header { padding: 14px 16px; }
-    .modal-body { padding: 16px; }
+    .modal-header { padding: 12px 14px; }
+    .modal-title { font-size: 15px; }
+    .modal-body { padding: 14px; font-size: 13px; }
     .modal-footer { padding: 12px 16px; flex-wrap: wrap; }
     .modal-footer .btn { flex: 1 1 auto; justify-content: center; }
     .detail-grid { grid-template-columns: 1fr; }
