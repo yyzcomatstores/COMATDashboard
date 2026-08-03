@@ -605,6 +605,14 @@
   .badge-unloading { background: rgba(203,213,225,0.15); color: var(--porter-teal); border: 1px solid rgba(203,213,225,0.35); }
   .badge-delayed   { background: rgba(232,65,62,0.2);   color: var(--porter-red); border: 1px solid rgba(232,65,62,0.4); }
   .badge-aog       { background: var(--porter-red); color: #ffffff; border: 1px solid var(--porter-red); font-weight: 700; }
+  .gate-unverified-tag {
+    display: inline-flex; align-items: center; gap: 2px;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.2px;
+    color: var(--porter-red); background: rgba(232,65,62,0.14);
+    border: 1px solid rgba(232,65,62,0.35);
+    padding: 1px 5px; border-radius: 4px;
+    margin-left: 5px; vertical-align: middle; white-space: nowrap;
+  }
   .badge-live      { background: rgba(46,204,138,0.12); color: var(--porter-green); font-size: 11px; }
 
   /* ── TV CYCLE INDICATOR ── */
@@ -3285,7 +3293,7 @@ function renderFlights() {
       <td class="mono">${timeCell}</td>
       <td>${delayCell}</td>
       <td>${statusBadge}</td>
-      <td class="mono">${f.gate}</td>
+      <td class="mono">${f.gate || '–'}${f.gateNeedsVerification ? '<span class="gate-unverified-tag" title="Not yet matched to an AVOP stand — this is the passenger gate, not a confirmed stand.">⚠ UNVERIFIED</span>' : ''}</td>
       <td>${hasAOG ? `<span class="badge badge-aog">[AOG] ${hasCom} item${hasCom>1?'s':''}</span>` : hasCom ? `<span class="badge badge-outbound">${hasCom} item${hasCom>1?'s':''}</span>` : '<span style="color:var(--text-muted);font-size:12px;">—</span>'}</td>
     </tr>`;
   }).join('');
@@ -3398,7 +3406,7 @@ function renderFlightLegBlock(leg, label, city, code) {
       <div class="fd-leg-time">${timeHtml}</div>
       <div class="fd-leg-meta">
         <div class="fd-leg-meta-item"><div class="fd-leg-meta-label">Terminal</div><div class="fd-leg-meta-value">–</div></div>
-        <div class="fd-leg-meta-item"><div class="fd-leg-meta-label">Gate</div><div class="fd-leg-meta-value">${leg.gate || '–'}</div></div>
+        <div class="fd-leg-meta-item"><div class="fd-leg-meta-label">Gate</div><div class="fd-leg-meta-value">${leg.gate || '–'}${leg.gateNeedsVerification ? '<span class="gate-unverified-tag" title="Not yet matched to an AVOP stand — this is the passenger gate, not a confirmed stand.">⚠ UNVERIFIED</span>' : ''}</div></div>
       </div>
     </div>`;
 }
