@@ -15,7 +15,7 @@ SHEET_TAB      = "Flights"                            # tab name inside the spre
 
 # All stations that get their own dashboard login. Add/remove airport codes here
 # to change which stations are tracked — no other code changes needed.
-HOME_AIRPORTS = ["YYZ", "YTZ", "YHZ", "YOW"]
+HOME_AIRPORTS = ["YYZ", "YTZ", "YHZ", "YOW", "YYC"]
 
 # How many days around "today" to keep (the feed spans multiple days of history/future).
 # 0 = today only. 1 = today +/- 1 day. Adjust to taste.
